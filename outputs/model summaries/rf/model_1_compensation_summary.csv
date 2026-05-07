@@ -1,0 +1,2 @@
+imputation,model,r2,adj_r2,cv_r2
+rf_imputed,model_1_compensation,0.02602621163761201,0.025951361588553823,0.030904958281712337

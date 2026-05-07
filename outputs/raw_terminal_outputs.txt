@@ -1,0 +1,40 @@
+Running MICE seed sweep...
+Seed: 42 
+Seed: 100 
+Seed: 200 
+Seed: 300 
+Seed: 400 
+Warning message:
+There was 1 warning in `summarise()`.
+ℹ In argument: `across(all_of(predictors), mean, na.rm = TRUE)`.
+ℹ In group 1: `seed = 42`.
+Caused by warning:
+! The `...` argument of `across()` is deprecated as of dplyr 1.1.0.
+Supply arguments directly to `.fns` through an anonymous function instead.
+
+  # Previously
+  across(a:b, mean, na.rm = TRUE)
+
+  # Now
+  across(a:b, \(x) mean(x, na.rm = TRUE)) 
+
+Seed sweep summary:
+# A tibble: 5 × 8
+   seed nsplit xerror Uses_AI Salary TimeSearching_Min Years_Exp Is_Remote
+  <dbl>  <dbl>  <dbl>   <dbl>  <dbl>             <dbl>     <dbl>     <dbl>
+1   200    185  0.978   0       652.             2503.     1102.      1.23
+2   100    192  0.979   0       504.             2445.     1111.      4.56
+3    42    159  0.979   2.75    343.             2510.     1113.      2.18
+4   300    166  0.979   0       502.             2487.      971.      1.76
+5   400    186  0.979   0.632   684.             2503.      998.      3.14
+
+Generating CP profile...
+
+CP profile table:
+           CP nsplit rel error    xerror        xstd
+1 0.011842796      0 1.0000000 1.0000176 0.008756860
+2 0.005531929      1 0.9881572 0.9882139 0.008617451
+3 0.002667626      2 0.9826253 0.9834685 0.008605035
+4 0.001409180      3 0.9799576 0.9806989 0.008545678
+5 0.001159677      4 0.9785485 0.9800368 0.008536870
+6 0.001000000      5 0.9773888 0.9789446 0.008529558

@@ -1,0 +1,2 @@
+
+    Salary = as.numeric(Salary),

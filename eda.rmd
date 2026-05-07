@@ -1,0 +1,148 @@
+---
+title: "The GenAI Productivity-Satisfaction Tradeoff"
+author: "G2G7 - Aloba, Del Monte, Del Rio, Dorin, Rivera"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: lumen
+    highlight: tango
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = "center")
+```
+
+## Executive Summary
+
+This Exploratory Data Analysis (EDA) visualizes data that will be used to measure the tradeoff between salary and job satisfaction associated with Generative AI adoption among full-time software developers, using the Stack Overflow 2024 survey.
+
+The dataset is filtered to respondents with `Employment == "Employed, full-time"` and the following analysis variables: `Salary`, `Uses_AI`, `Years_Exp`, `Job_Satisfaction`, `Is_Remote`, and `TimeSearching`.
+
+The analysis focuses on three simple comparisons: salary by AI adoption, job satisfaction by time spent searching/debugging, and salary trajectories by experience and AI adoption.
+
+```{r load-data}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(scales)
+
+df <- read_csv("outputs/data_imputed.csv", show_col_types = FALSE)
+
+df_viz <- df %>%
+  mutate(
+    AI_Status = factor(ifelse(Uses_AI == 1, "Adopts AI", "No AI"), levels = c("No AI", "Adopts AI")),
+    Remote_Status = factor(ifelse(Is_Remote == 1, "Remote", "Hybrid / In-person"), levels = c("Hybrid / In-person", "Remote")),
+    TimeSearching = as.factor(TimeSearching)
+  )
+
+cat("Observations:", nrow(df_viz), "full-time developers\n")
+cat("Columns used:", paste(names(df_viz), collapse = ", "), "\n")
+```
+
+## 1. Financial Reality: Salary by AI Adoption
+
+Does AI adoption associate with higher reported salary?
+
+```{r wage-gap, fig.height=4}
+ggplot(df_viz, aes(x = AI_Status, y = Salary, fill = AI_Status)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.8) +
+  scale_fill_manual(values = c("No AI" = "#bdc3c7", "Adopts AI" = "#3498db")) +
+  scale_y_continuous(labels = dollar_format()) +
+  coord_cartesian(ylim = c(0, 250000)) +
+  theme_minimal(base_size = 12) +
+  labs(title = "Salary Distribution by AI Adoption", x = NULL, y = "Annual Salary (USD)") +
+  theme(legend.position = "none")
+```
+
+## 2. Job Satisfaction vs. Time Spent Searching
+
+Does more time spent searching/debugging associate with lower job satisfaction?
+
+```{r friction-penalty, fig.height=4}
+ggplot(df_viz, aes(x = TimeSearching, y = Job_Satisfaction, fill = TimeSearching)) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal(base_size = 12) +
+  labs(title = "Job Satisfaction by Time Spent Searching/Debugging", x = "Time Searching (categorical)", y = "Job Satisfaction (0-10)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+```
+
+## 3. Salary Trajectory by Experience and AI Adoption
+
+Does AI adoption associate with different salary trajectories across years of experience?
+
+```{r experience-multiplier, fig.height=4}
+ggplot(df_viz, aes(x = Years_Exp, y = Salary, color = AI_Status)) +
+  geom_smooth(method = "lm", se = FALSE, size = 1) +
+  scale_color_manual(values = c("No AI" = "#7f8c8d", "Adopts AI" = "#2980b9")) +
+  scale_y_continuous(labels = dollar_format()) +
+  coord_cartesian(ylim = c(0, 250000), xlim = c(0, 35)) +
+  theme_minimal(base_size = 12) +
+  labs(title = "Salary by Experience and AI Adoption", x = "Years of Experience", y = "Annual Salary (USD)") +
+  theme(legend.position = "bottom")
+```
+
+## 4. Does Remote Work Influence?
+
+Because `Is_Remote` is a filtered feature, this summarizes how AI adoption appears across remote vs hybrid/in-person work modes.
+
+```{r remote-context, fig.height=4}
+ggplot(df_viz, aes(x = Remote_Status, fill = AI_Status)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = percent_format()) +
+  scale_fill_manual(values = c("No AI" = "#7f8c8d", "Adopts AI" = "#2980b9")) +
+  theme_minimal(base_size = 12) +
+  labs(
+    title = "AI Adoption Share by Work Mode",
+    x = "Work Mode",
+    y = "Share of Respondents",
+    fill = "AI Status"
+  )
+```
+
+
+## 5. Does AI actually help with problem solving?
+
+Does AI adoption mitigate the pain of workflow friction?
+
+```{r friction-buffer, fig.height=5, fig.width=10}
+ggplot(df_viz, aes(x = TimeSearching, y = Job_Satisfaction, fill = AI_Status)) +
+  geom_boxplot(alpha = 0.8, position = position_dodge(width = 0.8), color = "#2c3e50") +
+  scale_fill_manual(values = c("No AI" = "#bdc3c7", "Adopts AI" = "#3498db")) +
+  theme_minimal(base_size = 12) +
+  labs(
+    title = "AI & Coding Friction", 
+    subtitle = "Job Satisfaction across Searching Time based on AI use  ",
+    x = "Daily Time Spent Searching for Answers", 
+    y = "Job Satisfaction Score (0-10)",
+    fill = "Workflow Context"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"), 
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold")
+  )
+```
+
+
+## 6. AI Use Years-Experience Adoption
+
+Is AI just a junior developer tool, or is it industry-wide?
+```{r adoption-density, fig.height=4, fig.width=9}
+ggplot(df_viz, aes(x = Years_Exp, fill = AI_Status)) +
+  geom_density(alpha = 0.6, color = "#2c3e50") +
+  scale_fill_manual(values = c("No AI" = "#bdc3c7", "Adopts AI" = "#3498db")) +
+  coord_cartesian(xlim = c(0, 35)) +
+  theme_minimal(base_size = 12) +
+  labs(
+    title = "Adoption Curve", 
+    subtitle = "Density of AI Usage Across Professional Seniority",
+    x = "Years of Professional Experience", 
+    y = "Density of Developers",
+    fill = "AI or No AI?"
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold")
+  )
+```
