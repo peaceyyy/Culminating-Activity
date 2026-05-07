@@ -305,18 +305,6 @@ Our analysis shows that AI tools are not the main drivers of developer well-bein
 
 Furthermore, the model shows that using AI does not change job satisfaction for junior developers. Early-career professionals care much more about workplace flexibility, such as remote work (Dice, 2024). In contrast, AI acts as a small bonus for senior developers, specifically those earning over $102,000. This means GenAI is not a universal fix for low morale. It is simply a secondary perk for veterans who already have high pay, independence, and the experience needed to comfortably handle the technical debt that AI leaves behind.
 
-
-```{r}
-# Placeholder: Variable importance bar chart for the main tree
-```
-
-
-```{r}
-# Placeholder: CP profile table or line plot
-```
-
-The CP profile summarizes the trade-off between tree size and cross-validated error. It helps justify why the selected tree complexity is not overfitting a single split of the data.
-
 Interpretation
 
 Taken together, the evidence suggests that the main tree is stable in its structure at the chosen hyperparameters, but the importance ranking is sensitive to imputation. When the tree is tuned for structure on a fixed imputation, the dominant drivers are years of experience and salary, and AI use appears only as a small, conditional factor. When the missing data is perturbed through different imputations, workflow friction rises to the top, while the direct effect of AI use becomes unstable.
