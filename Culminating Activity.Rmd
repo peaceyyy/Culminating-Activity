@@ -2,15 +2,19 @@
 title: "Culminating Activity"
 author: "Aloba, Loyan Edrian | Dalmonte, Franklin | Delrio Martin Nicholas | Dorin, Homer Adriel | Rivera, Nythan"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
-output: pdf_document
-    
-
+output:
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{setspace}
+  - \usepackage{needspace}
+  - \onehalfspacing
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Abstract
+# Abstract (@Loyan)
 Provide a concise summary of the study including purpose, methods, results, and conclusions (150–250 words).
 
 # Chapter 1: Introduction
@@ -58,6 +62,9 @@ A critical limitation is that survey data regarding compensation and satisfactio
 This study does not attempt an exhaustive feature selection of the entire Stack Overflow dataset. Instead, the predictor variables (AI Usage, Salary, Time Spent Searching, Years of Experience, and Remote Status) were handpicked based on intuition and prior literature regarding developer productivity.  	
 
 
+
+
+
 # Chapter 2: Review of Related Literature (@Loyan & @Nythan)
 
 ## Related Studies
@@ -79,14 +86,14 @@ Contextual Controls: Years of Experience and Remote Status serve as baseline var
 
 The CART algorithm evaluates how these variables interact, specifically testing whether high compensation mathematically buffers the negative impact of AI-induced workflow friction when predicting final job satisfaction levels.
 
-```{r conceptual-framework, echo=FALSE, fig.width=10, fig.height=5.8, out.width='100%', fig.cap="Conceptual Framework of the GenAI Productivity-Satisfaction Tradeoff"}
+```{r conceptual-framework, echo=FALSE, fig.width=10, fig.height=5.8, out.width='100%', fig.cap="Relationship between variables"}
 old_par <- par(mar = c(1, 1, 0.6, 1))
 on.exit(par(old_par), add = TRUE)
 
 plot.new()
 plot.window(xlim = c(0, 10), ylim = c(0, 8))
 box(col = "#666666")
-title(main = "Conceptual Framework of the GenAI Productivity-Satisfaction Tradeoff", cex.main = 1.0, line = 0.5)
+title(main = "Relationship between variables", cex.main = 1.0, line = 0.5)
 
 draw_box <- function(xmin, ymin, xmax, ymax, label, fill, border, cex = 0.88) {
   rect(xmin, ymin, xmax, ymax, col = fill, border = border, lwd = 2)
@@ -125,13 +132,13 @@ par(old_par)
 This study uses a quantitative, descriptive-correlational design to examine how AI adoption, salary, and workflow friction (as measured by Time Spent Searching & Debugging in minutes) relate to developer job satisfaction.
 
 **Data Collection**
-The study uses secondary data from the Stack Overflow 2024 Developer Survey. The raw CSV is provided in the repository [data/survey_results_public.csv](data/survey_results_public.csv); the analysis filters this file to full-time respondents (see `filter_columns.r`) and writes the reduced table to [outputs/data_filtered_columns.csv](outputs/data_filtered_columns.csv).
 
-The survey schema is included as [data/survey_results_schema.csv](data/survey_results_schema.csv). 
+The study uses secondary data from the Stack Overflow 2024 Developer Survey. The raw CSV is provided in the repository [data/survey_results_public.csv](data/survey_results_public.csv); the analysis filters this file to full-time respondents (see `filter_columns.r`) and writes the filtered table to [outputs/data_filtered_columns.csv](outputs/data_filtered_columns.csv). The survey schema is included as [data/survey_results_schema.csv](data/survey_results_schema.csv) for a clearer understanding of the possible columns from the original survey questionnaire. 
 
 Compensation and satisfaction responses are vulnerable to MNAR (Missing Not At Random) bias, so the analysis uses MICE with Classification and Regression Trees instead of listwise deletion.
 
 The final modeling set was limited to Salary, Uses_AI, Years_Exp, Job_Satisfaction, Is_Remote, and TimeSearching because these variables align directly with compensation, AI adoption, seniority, work arrangement, and workflow friction.
+
 
 **Data Preparation and Initial Variable Selection**
 
@@ -139,11 +146,10 @@ The raw survey file was reduced with [filter_columns.r](filter_columns.r), which
 
 These columns were kept because they capture the financial, behavioral, and contextual factors needed for this analysis' statement of the problem and objectives. Salary was prioritized as a key predictor because prior research on skill complementarity (Stephany & Teutloff, 2024) establishes that compensation reflects structural economic value rather than arbitrary scarcity premiums, making it a theoretically grounded mediating variable between AI adoption and job satisfaction. 
 
+
 **Initial Data Checks and EDA**
 
-The dataset was checked with [check_data.r](check_data.r) to review missingness patterns, unique-value counts, and basic distributions in both the raw survey data and the filtered modeling table.
-
-Exploratory visualization was handled with [eda.rmd](eda.rmd) to inspect the early relationships among AI adoption, salary, job satisfaction, experience, and time spent searching/debugging. This step served as a plausibility check before modeling.
+The dataset was checked with [check_data.r](check_data.r) to review missingness patterns, unique-value counts, and basic distributions in both the raw survey data and the filtered modeling table. Exploratory visualization was handled with [eda.rmd](eda.rmd) to inspect the early relationships among AI adoption, salary, job satisfaction, experience, and time spent searching/debugging. This step served as a plausibility check before modeling.
 
 
 **Imputation and Modeling Workflow**
@@ -154,9 +160,11 @@ An initial exploratory run used `set.seed(42)` (a commonly used placeholder seed
 
 After the sensitivity check, subsequent script runs adopted `set.seed(200)` for the corrected baseline because it produced the lowest cross-validated error across the tested seeds (see Chapter 4 and [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv)).
 
+
 **Hyperparameter Shuffling**
 
 The CART stage then uses hyperparameter shuffling to compare `cp`, `minsplit`, and `maxdepth`. In this context, `cp` is the pruning strength and `xerror` is the cross-validated error reported by `rpart`. Higher `cp` values prune more aggressively and can remove all splits. The best-performing combination was `cp = 0.001`, `minsplit = 20`, and `maxdepth = 5` (see hyperparameter outputs), and under the corrected baseline `TimeSearching_Min` was the strongest predictor, followed by `Years_Exp` and `Salary`.
+
 
 **Robustness Checks**
 
@@ -200,8 +208,6 @@ Visualization (@Martin)
 
 The descriptive table above is computed from [outputs/data_imputed_primary.csv](outputs/data_imputed_primary.csv).
 
-Sample lang to (@Martin)
-
 The imputed analysis sample provides the descriptive base for the rest of the chapter. Salary, job satisfaction, time spent searching/debugging, and years of experience are the central quantities because they capture the compensation, workload, and career-stage dimensions of a software engineer in the industry.
 
 **Model Complexity and Pruning Stability — Complexity Profile (CP)**
@@ -222,9 +228,11 @@ The CP profile in [outputs/cart_cp_profile.csv](outputs/cart_cp_profile.csv) sup
 
 An analysis of the CP profile shows a clear stabilization point. The table in [outputs/cart_cp_profile.csv](outputs/cart_cp_profile.csv) reports xerror values of: 1.00002 at CP = 0.0118428 (nsplit = 0), 0.98821 at CP = 0.0055319 (nsplit = 1), 0.98347 at CP = 0.0026676 (nsplit = 2), 0.98070 at CP = 0.00140918 (nsplit = 3), 0.98004 at CP = 0.00115968 (nsplit = 4), and 0.97894 at CP = 0.001 (nsplit = 5). The largest reductions in xerror occur with the earliest splits; after CP = 0.001 the marginal improvements are very small.
 
-As seen above the cross-validated error across different pruning thresholds reveals a clear stabilization point at CP = 0.001 As the tree begins to grow, the initial broad splits, which represent the macro-structural drivers of Experience and Salary, produce the most significant and reliable reductions in prediction error. However, as the complexity constraint is loosened to allow for deeper branches, the cross-validated error flattens out and changes only within a very narrow range.
+As seen above the cross-validated error across different pruning thresholds reveals a clear stabilization point at CP = 0.001. As the tree begins to grow, the initial broad splits, which represent the macro-structural drivers of Experience and Salary, produce the most significant and reliable reductions in prediction error. However, as the complexity constraint is loosened to allow for deeper branches, the cross-validated error flattens out and changes only within a very narrow range.
 
 This behavior makes the chosen tree complexity highly defensible: the model attains most of its predictive benefit with a small number of splits, capturing the principal signals (years of experience and salary) without overfitting to minor fluctuations in workflow friction (time spent searching/debugging) and/or the adoption of AI tools.
+
+
 
 **Hyperparameter Shuffling**
 
@@ -243,11 +251,12 @@ best_shuffle
 
 Hyperparameter Shuffling results are taken from [outputs/cart_hyperparam_shuffle.csv](outputs/cart_hyperparam_shuffle.csv). The best usable setting is cp = 0.001, minsplit = 20, maxdepth = 5 (xerror = 0.98105, nsplit = 125).
 
-By contrast, larger cp values (e.g., 0.008–0.02) frequently produce nsplit = 0 — a textbook sign of over-pruning. Over-pruning happens when the pruning penalty (cp) requires a splitting gain larger than any candidate split provides, so rpart collapses the tree to its root. The practical effects are underfitting (the model cannot partition the data), loss of variable‑importance information, and misleading simplicity: a pruned tree with nsplit = 0 may appear stable but offers no explanatory partitions. Use the CP profile and grid search to pick cp near the elbow (here ≈ 0.001), where xerror is low and nsplit > 0, balancing interpretability and generalization.
+By contrast, larger cp values (e.g., 0.008–0.02) frequently produce nsplit = 0 — a textbook sign of over-pruning. Over-pruning happens when the pruning penalty (cp) requires a splitting gain larger than any candidate split provides, so rpart collapses the tree to its root. The practical effects are underfitting (the model cannot partition the data), loss of variable‑importance information, and misleading simplicity: a pruned tree with nsplit = 0 may appear stable but offers no explanatory partitions. Use the CP profile and grid search to pick cp near the elbow (about 0.001), where xerror is low and nsplit > 0, balancing interpretability and generalization.
 
 ```{r hyperparam-shuffling-visual}
 # Potential visualization: xerror by cp, with nsplit shown as a point label or second axis.
 ```
+
 
 **Set Seed Sensitivity**
 
@@ -265,7 +274,7 @@ seed_averages %>% arrange(xerror)
 
 The MICE averages in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv) show that the model is not driven by a single imputation draw. Across the tested seeds, TimeSearching_Min stays the strongest signal, while Years_Exp and Salary remain secondary. Uses_AI stays weak or near zero in most runs, which suggests that the direct effect of AI adoption is not stable once missing data is re-generated.
 
-In this study the lowest observed `xerror` across the tested seeds occurred at `set.seed(200)` (xerror ≈ 0.9784), so the main results are reported using the imputed dataset generated with `set.seed(200)`. The full seed-run results are available in [outputs/cart_mice_seed_runs.csv](outputs/cart_mice_seed_runs.csv) and summarized in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv).
+In this study the lowest observed `xerror` across the tested seeds occurred at `set.seed(200)` (xerror about 0.9784), so the main results are reported using the imputed dataset generated with `set.seed(200)`. The full seed-run results are available in [outputs/cart_mice_seed_runs.csv](outputs/cart_mice_seed_runs.csv) and summarized in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv).
 
 **Testing for Robustness**
 
@@ -279,11 +288,11 @@ This means GenAI is not a universal fix for low morale. It behaves more like a c
 
 
 
-Interpretation
+\Needspace{8\baselineskip}
 
-Taken together, the evidence suggests that the main tree is stable in its structure at the chosen hyperparameters, but the importance ranking is sensitive to imputation. In the corrected baseline, TimeSearching_Min is the strongest predictor, with Years_Exp and Salary trailing behind. When the missing data is perturbed through different imputations, workflow friction remains the top signal, while Uses_AI stays weak and unstable.
+**Interpretation**
 
-This shows a weak and non-robust direct link between AI use and job satisfaction, while workflow friction, years of experience, and salary remain the strongest and most consistent signals.
+Taken together, the evidence suggests that the main tree is stable in its structure at the chosen hyperparameters, but the importance ranking is sensitive to imputation. In the corrected baseline, TimeSearching_Min is the strongest predictor, with Years_Exp and Salary trailing behind. When the missing data are dealt with through different imputations, workflow friction remains the most influential variable, while Uses_AI stays weak and unstable. This shows a weak and non-robust direct link between AI use and job satisfaction, while workflow friction, years of experience, and salary remain the strongest and most consistent signals.
 
 ## Chapter 5: Conclusion and Recommendations
 Conclusion
@@ -347,5 +356,3 @@ Appendix C: Notes on Random Seeds
 Random seeds initialize pseudorandom number generators (PRNGs) so that stochastic processes (like MICE imputations or algorithmic subsampling) can be reproduced exactly. A seed is not a model parameter — it only fixes the RNG state for reproducibility. Because different seeds can produce slightly different imputations or model splits, reporting the seed and testing sensitivity across several seeds is good practice for transparency.
 
 Why use `42`? The number 42 is a cultural reference (Douglas Adams' The Hitchhiker's Guide to the Galaxy) and has become a de-facto, tongue-in-cheek default in many code examples. There is no statistical or computational reason to prefer 42 over any other integer — it is purely conventional.
-
-Recommendation: report the seed used for the published baseline, include the full seed-sensitivity results (as found in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv)), and treat the seed choice as part of the reproducibility metadata rather than a hyperparameter that needs theoretical justification.
