@@ -14,8 +14,9 @@ header-includes:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Abstract (@Loyan)
-Provide a concise summary of the study including purpose, methods, results, and conclusions (150–250 words).
+# Abstract 
+This study examines the “GenAI Productivity–Satisfaction Tradeoff” among full‑time software developers using the Stack Overflow 2024 Developer Survey. We built CART predictive models using AI usage, salary, years of experience, remote status, and time spent searching and debugging. Workflow friction (time spent searching and debugging) was the strongest predictor of job satisfaction, with years of experience and salary as secondary predictors; direct AI usage was weak and unstable across hyperparameter and seed‑sensitivity checks, and higher pay did not fully offset the day‑to‑day friction associated with AI‑assisted workflows (as measured by time spent searching for answers online and debugging code). The study was motivated by the hypothesis that AI use could raise compensation while also introducing unintended mental and emotional burdens, creating a potential tradeoff between economic gain and everyday well‑being. Missing data were handled via MICE with CART imputations, and model stability was assessed across multiple seeds and hyperparameter settings.
+
 
 # Chapter 1: Introduction
 
@@ -65,14 +66,21 @@ This study does not attempt an exhaustive feature selection of the entire Stack 
 
 
 
-# Chapter 2: Review of Related Literature (@Loyan & @Nythan)
+# Chapter 2: Review of Related Literature 
 
 ## Related Studies
-Summarize previous research.
 
-## Related Literature
+The studies reviewed here collectively build the foundation for investigating whether increased productivity and compensation truly translate into better job satisfaction for developers.
 
-Recent work by Stephany and Teutloff (2024) demonstrates that the economic value of a skill is strongly determined by *skill complementarity*—the number, diversity, and value of other skills with which it can be combined. Their analysis of 962 skills reveals that AI skills are particularly valuable, increasing worker wages by 21% on average, primarily because they exhibit high levels of complementarity with diverse existing skill sets. This finding provides theoretical grounding for understanding why financial compensation emerges as a critical mediating variable in predicting developer satisfaction. Rather than being arbitrary or divorced from productivity metrics, the salary premium associated with AI adoption reflects structural economic value accruing through skill portfolio enhancement.
+**The Productivity Paradox and Workflow Friction**
+The challenges of AI adoption are increasingly defined by a "productivity paradox," where organizations expect immediate efficiency gains but instead encounter delayed progress and heightened coordination costs as employees struggle to adapt their workflows (McElheran, 2025). In software engineering, this paradox manifests as a "productivity placebo"—developers perceive themselves as working faster with generative AI, yet rigorously controlled trials reveal they actually take 19% longer to complete complex tasks (Afroz et al., 2025; Becker et al., 2025). Rather than eliminating work, these tools temporarily increase workflow complexity by redistributing human effort toward downstream debugging, resulting in a 91% increase in review times and degraded system-level delivery metrics (Faros AI, 2025; DORA Research Program, 2024). Kristina McElheran (2025), in The “Productivity Paradox” of AI Adoption in Manufacturing Firms, explains that organizations often expect AI to immediately improve efficiency and output. The study further emphasizes that productivity improvements depend not only on the technology itself, but also on how effectively organizations integrate AI into existing work processes.
+
+**Financial Premiums for AI Competency**
+Despite the documented operational friction, the labor market heavily incentivizes AI adoption through substantial financial compensation. PricewaterhouseCoopers (2025) documented a massive 56% wage premium for workers demonstrating AI expertise, reflecting extreme market demand and skill scarcity. This trend is empirically supported by Stephany and Teutloff (2024), who found that AI capabilities increase individual wages by an average of 21% due to their high complementarity with existing technical competencies. Ultimately, these aggressive financial incentives establish a strong economic baseline, raising the question of whether this premium effectively neutralizes the daily frustrations associated with AI-assisted software development.
+
+**Job Satisfaction and the "Golden Handcuffs"**
+The theoretical tension between daily workflow frustration and high financial compensation is best understood through foundational models of occupational psychology. Herzberg’s (1959) two-factor theory establishes that while high salaries function as essential "hygiene factors" that prevent active dissatisfaction, they cannot substitute for the intrinsic motivators of meaningful, low-friction work. Building on this, Mitchell et al. (2001) describe how lucrative compensation creates job embeddedness, trapping employees in "golden handcuffs" where the financial cost of leaving outweighs the benefits of escaping a high-stress environment. Together, these frameworks suggest that developers may endure the systemic friction of AI tools simply because the associated wage premiums make it economically irrational to quit. 
+
 
 ## Conceptual Framework
 At the core of this framework is the ultimate target variable: Job Satisfaction.
@@ -128,11 +136,9 @@ par(old_par)
 
 ## Chapter 3: Methodology
 **Research Design**
-
 This study uses a quantitative, descriptive-correlational design to examine how AI adoption, salary, and workflow friction (as measured by Time Spent Searching & Debugging in minutes) relate to developer job satisfaction.
 
 **Data Collection**
-
 The study uses secondary data from the Stack Overflow 2024 Developer Survey. The raw CSV is provided in the repository [data/survey_results_public.csv](data/survey_results_public.csv); the analysis filters this file to full-time respondents (see `filter_columns.r`) and writes the filtered table to [outputs/data_filtered_columns.csv](outputs/data_filtered_columns.csv). The survey schema is included as [data/survey_results_schema.csv](data/survey_results_schema.csv) for a clearer understanding of the possible columns from the original survey questionnaire. 
 
 Compensation and satisfaction responses are vulnerable to MNAR (Missing Not At Random) bias, so the analysis uses MICE with Classification and Regression Trees instead of listwise deletion.
@@ -141,19 +147,16 @@ The final modeling set was limited to Salary, Uses_AI, Years_Exp, Job_Satisfacti
 
 
 **Data Preparation and Initial Variable Selection**
-
 The raw survey file was reduced with [filter_columns.r](filter_columns.r), which filtered for full-time employees and built the analysis table. Salary was derived from `ConvertedCompYearly`, Years_Exp from `YearsCodePro`, Uses_AI from `AISelect`, Job_Satisfaction from `JobSat`, and Is_Remote from `RemoteWork`. The output was saved to [outputs/data_filtered_columns.csv](outputs/data_filtered_columns.csv).
 
 These columns were kept because they capture the financial, behavioral, and contextual factors needed for this analysis' statement of the problem and objectives. Salary was prioritized as a key predictor because prior research on skill complementarity (Stephany & Teutloff, 2024) establishes that compensation reflects structural economic value rather than arbitrary scarcity premiums, making it a theoretically grounded mediating variable between AI adoption and job satisfaction. 
 
 
 **Initial Data Checks and EDA**
-
 The dataset was checked with [check_data.r](check_data.r) to review missingness patterns, unique-value counts, and basic distributions in both the raw survey data and the filtered modeling table. Exploratory visualization was handled with [eda.rmd](eda.rmd) to inspect the early relationships among AI adoption, salary, job satisfaction, experience, and time spent searching/debugging. This step served as a plausibility check before modeling.
 
 
 **Imputation and Modeling Workflow**
-
 The imputation step was handled in [main.r](main.r), which creates or reuses [outputs/data_imputed_primary.csv](outputs/data_imputed_primary.csv).
 
 An initial exploratory run used `set.seed(42)` (a commonly used placeholder seed; see Appendix C). Because a single RNG draw can create fragile results, the pipeline includes an explicit seed-sensitivity check: imputations were re-run with seeds = c(42, 100, 200, 300, 400) using `cart_robustness_check.r`, and the resulting trees were compared by their cross-validated error (`xerror`). This procedure ensures we report a defensible baseline while keeping the imputation uncertainty transparent.
@@ -162,12 +165,10 @@ After the sensitivity check, subsequent script runs adopted `set.seed(200)` for 
 
 
 **Hyperparameter Shuffling**
-
 The CART stage then uses hyperparameter shuffling to compare `cp`, `minsplit`, and `maxdepth`. In this context, `cp` is the pruning strength and `xerror` is the cross-validated error reported by `rpart`. Higher `cp` values prune more aggressively and can remove all splits. The best-performing combination was `cp = 0.001`, `minsplit = 20`, and `maxdepth = 5` (see hyperparameter outputs), and under the corrected baseline `TimeSearching_Min` was the strongest predictor, followed by `Years_Exp` and `Salary`.
 
 
 **Robustness Checks**
-
 The robustness work was separated into two parts. First, the hyperparameter shuffling held the imputed data fixed while varying model settings, which isolates model-choice effects. Second, the seed-sensitivity check changed the imputation seed while holding the CART settings fixed, which isolates data-uncertainty effects.
 
 The seed-sensitivity workflow is documented in [cart_robustness_check.r](cart_robustness_check.r), and its outputs are saved to [outputs/cart_mice_seed_runs.csv](outputs/cart_mice_seed_runs.csv) and [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv). The CP profile is saved to [outputs/cart_cp_profile.csv](outputs/cart_cp_profile.csv) and provides an additional check on pruning.
@@ -311,17 +312,17 @@ The following recommendations are intended for future researchers who want to ex
 
 1. Compare imputation strategies directly. MICE should remain the primary benchmark because it handles mixed variable types well and preserves uncertainty across multiple draws, but future studies can test KNN-based imputation as a sensitivity check. If a clustering-based alternative is explored, it should be used cautiously and justified against the data structure, since not all clustering methods handle mixed categorical and numeric variables cleanly. The main goal is to determine whether the same findings hold under a different missing-data treatment.
 
-2. Use the imputation comparison to test robustness, not just accuracy. A future paper could run the same modeling pipeline under MICE, KNN, and one additional baseline method, then compare the downstream effects on tree structure, xerror, and variable importance. That would show whether the conclusions are stable or whether they depend too heavily on one imputation choice.
+2. Use the imputation comparison to test robustness, not just accuracy. future studies can run the same modeling pipeline under MICE, KNN, and one additional baseline method, then compare the downstream effects on tree structure, xerror, and variable importance. That would show whether the conclusions are stable or whether they depend too heavily on one imputation choice.
 
 3. Extend the analysis to salary as a second outcome. A useful follow-up would be to build a parallel model for Salary and then compare it with the Job Satisfaction model. Since the results and discussion suggest that compensation and satisfaction are related but not identical outcomes, this would let future researchers check whether the same predictors appear in both models and whether AI tool adoption has a similar or different role depending on the response variable.
 
-4. Make AI adoption more explicit in future models. The results section shows that AI usage was not the dominant driver in the final tree, so future researchers should still keep it in the model but consider stronger operationalizations, such as frequency of use, task-specific use, or usage intensity. This would help determine whether the null result comes from the construct itself or from the way it was measured.
+4. Make AI adoption more explicit in future models. The results section shows that AI usage was not the dominant driver in the final tree. Consider other factors such as frequency of use, task-specific use, or usage intensity. This would help determine whether the null result comes from the construct itself or from the way it was measured.
 
 5. Report seed and model stability in every replication. Because imputation and tree fitting are both stochastic, future work should report the seed used for the main run, the full seed-sensitivity table, and the selected hyperparameters. A small appendix of alternate runs is often enough to show that the result is not a one-seed artifact.
 
 6. If time allows, compare CART with at least one alternative model. CART was appropriate here because the goal was interpretability, but future studies could compare it with random forest or a regularized regression model to check whether the same predictors appear consistently across different model families.
 
-7. Add a cross-outcome association check when the workflow is expanded. The results and discussion make it reasonable to expect overlap between the Salary and Job Satisfaction models, so future researchers can formally test that relationship using a concordance check, correlation screen, or two-model comparison. That would be a clean way to see whether AI adoption, experience, and workflow friction line up across outcomes without forcing the idea into the current study's already-complete results section.
+7. Add a cross-outcome association check when the workflow is expanded. The results and discussion make it reasonable to expect overlap between the Salary and Job Satisfaction models, so future researchers can formally test that relationship using a correlation screen, or two-model comparison. That would be a clean way to see whether AI adoption, experience, and workflow friction line up across outcomes.
 
 ## References
 
