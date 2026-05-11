@@ -1,6 +1,6 @@
 ---
 title: "Culminating Activity"
-author: "Aloba, Loyan Edrian | Delrio, Martin Nicholas | Dorin, Homer Adriel | Rivera, Nythan"
+author: "Aloba, Loyan Edrian | Dalmonte, Frank | Delrio, Martin Nicholas | Dorin, Homer Adriel | Rivera, Nythan"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 output:
   pdf_document:
@@ -165,7 +165,7 @@ After the sensitivity check, subsequent script runs adopted `set.seed(200)` for 
 
 
 ### Hyperparameter Shuffling
-The CART stage then uses hyperparameter shuffling to compare `cp`, `minsplit`, and `maxdepth`. In this context, `cp` is the pruning strength and `xerror` is the cross-validated error reported by `rpart`. Higher `cp` values prune more aggressively and can remove all splits. The best-performing combination was `cp = 0.001`, `minsplit = 20`, and `maxdepth = 5` (see hyperparameter outputs), and under the corrected baseline `TimeSearching_Min` was the strongest predictor, followed by `Years_Exp` and `Salary`.
+The CART stage then uses hyperparameter shuffling to compare `cp`, `minsplit`, and `maxdepth`. In this context, `cp` is the pruning strength and `xerror` is the cross-validated error reported by `rpart`. Higher `cp` values prune more aggressively and can remove all splits. The best-performing combination was `cp = 0.001`, `minsplit = 20`, and `maxdepth = 5`, and under the corrected baseline `TimeSearching_Min` was the strongest predictor, followed by `Years_Exp` and `Salary`.
 
 
 ### Robustness Check
@@ -333,7 +333,7 @@ best_shuffle
 
 Hyperparameter Shuffling results are taken from [outputs/cart_hyperparam_shuffle.csv](outputs/cart_hyperparam_shuffle.csv). The best usable setting is cp = 0.001, minsplit = 20, maxdepth = 5 (xerror = 0.98105, nsplit = 125).
 
-By contrast, larger cp values (e.g., 0.008–0.02) frequently produce nsplit = 0 — a textbook sign of over-pruning. Over-pruning happens when the pruning penalty (cp) requires a splitting gain larger than any candidate split provides, so rpart collapses the tree to its root. The practical effects are underfitting (the model cannot partition the data), loss of variable‑importance information, and misleading simplicity: a pruned tree with nsplit = 0 may appear stable but offers no explanatory partitions. Use the CP profile and grid search to pick cp near the elbow (about 0.001), where xerror is low and nsplit > 0, balancing interpretability and generalization.
+By contrast, larger cp values (e.g., 0.008–0.02) frequently produce nsplit = 0 (which shows over-pruning). Ove  r-pruning happens when the pruning penalty (CP) requires a splitting gain larger than any candidate split provides, so rpart collapses the tree to its root. The practical effects are underfitting (the model cannot partition the data), loss of variable‑importance information, and misleading simplicity: a pruned tree with nsplit = 0 may appear stable but offers no explanatory partitions. Use the CP profile and grid search to pick cp near the elbow (about 0.001), where xerror is low and nsplit > 0, balancing interpretability and generalization.
 
 ```{r hyperparam-shuffling-visual, echo=FALSE}
 valid_shuffle <- shuffle %>%
