@@ -17,7 +17,6 @@ if (!dir.exists(output_dir)) {
 # Load Raw Data
 df_raw <- read_csv("outputs/data_filtered_columns.csv", show_col_types = FALSE)
 
-# Helper: parse TimeSearching text into numeric minutes (robust)
 parse_time_searching <- function(x) {
   s <- as.character(x)
   s[is.na(s)] <- NA_character_
