@@ -308,8 +308,7 @@ rpart.plot(
   under = TRUE,
   fallen.leaves = TRUE,
   cex = 0.75,
-  main = "CART Tree for Job Satisfaction"
-)
+    )
 ```
 
 The tree highlights workflow friction (time spent searching and debugging) as the dominant split in the corrected baseline, with years of experience and salary appearing as secondary signals.
