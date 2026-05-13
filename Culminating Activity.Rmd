@@ -1,7 +1,6 @@
 ---
 title: "Culminating Activity"
-author: "Aloba, Loyan Edrian | Dalmonte, Frank | Delrio, Martin Nicholas | Dorin, Homer Adriel | Rivera, Nythan"
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
+author: "Aloba, Loyan Edrian | Dalmonte, Frank \\\ Delrio, Martin Nicholas | Dorin, Homer Adriel | Rivera, Nythan"
 output:
   pdf_document:
     latex_engine: xelatex
@@ -164,6 +163,13 @@ An initial exploratory run used `set.seed(42)` (a commonly used placeholder seed
 After the sensitivity check, subsequent script runs adopted `set.seed(200)` for the corrected baseline because it produced the lowest cross-validated error across the tested seeds (see Chapter 4 and [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv)).
 
 
+### Model Selection: CART with Regression (method = "anova")
+
+Job Satisfaction is a continuous outcome, which rules out classification methods and calls for a regression approach. CART with `method = "anova"` was selected for three reasons. First, it produces an interpretable tree structure that visualizes how variables interact—for example, whether high salary buffers workflow friction—rather than treating predictors as additively independent. Second, CART naturally captures non-linear relationships without manual specification, whereas linear regression assumes constant effects across the predictor range. Third, CART integrates cleanly with the MICE imputation workflow, handling mixed categorical (Uses_AI, Is_Remote) and continuous (Salary, Years_Exp) predictors in one framework.
+
+Alternative methods like random forest or regularized regression would trade interpretability for predictive accuracy. Since the study aims to understand mechanism (not just predict satisfaction), CART was the appropriate choice. Future research (Recommendation #6 in Chapter 5) should compare CART results against random forest to verify variable importance stability across model families.
+
+
 ### Hyperparameter Shuffling
 The CART stage then uses hyperparameter shuffling to compare `cp`, `minsplit`, and `maxdepth`. In this context, `cp` is the pruning strength and `xerror` is the cross-validated error reported by `rpart`. Higher `cp` values prune more aggressively and can remove all splits. The best-performing combination was `cp = 0.001`, `minsplit = 20`, and `maxdepth = 5`, and under the corrected baseline `TimeSearching_Min` was the strongest predictor, followed by `Years_Exp` and `Salary`.
 
@@ -279,6 +285,84 @@ The descriptive table above is computed from [outputs/data_imputed_primary.csv](
 
 The imputed analysis sample provides the descriptive base for the rest of the chapter. Salary, job satisfaction, time spent searching/debugging, and years of experience are the central quantities because they capture the compensation, workload, and career-stage dimensions of a software engineer in the industry.
 
+
+### CART Tree
+
+```{r cart-tree-visual, echo=FALSE, message=FALSE, warning=FALSE}
+library(rpart)
+library(rpart.plot)
+
+cart_df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
+
+cart_model <- rpart(
+  Job_Satisfaction ~ Uses_AI + Salary + TimeSearching_Min + Years_Exp + Is_Remote,
+  data = cart_df,
+  method = "anova",
+  control = rpart.control(cp = 0.001, minsplit = 20, maxdepth = 5)
+)
+
+rpart.plot(
+  cart_model,
+  type = 2,
+  extra = 101,
+  under = TRUE,
+  fallen.leaves = TRUE,
+  cex = 0.75,
+  main = "CART Tree for Job Satisfaction"
+)
+```
+
+The tree highlights workflow friction (time spent searching and debugging) as the dominant split in the corrected baseline, with years of experience and salary appearing as secondary signals.
+
+This pattern aligns with Herzberg's (1959) view that satisfaction rests on basic working conditions and compensation, not on a single new tool. AI may still matter in limited cases, but it is not the main driver of the tree. In the corrected baseline, the model points first to the time spent searching and debugging, then to experience and pay.
+
+This means GenAI is not a universal fix for low morale. It behaves more like a conditional feature than a core predictor. The 56% wage premium for AI skills (PricewaterhouseCoopers, 2025) can still work like "golden handcuffs" (Mitchell et al., 2001), but the tree does not show AI usage itself as the central force shaping satisfaction.
+
+The original base `plot()` and `text()` rendering is preserved in Appendix A for reference.
+
+
+### Variable Importance Ranking
+
+The final model's variable importance ranking gives a simple summary of the same pattern seen in the tree and the robustness checks below. `TimeSearching_Min` is the strongest predictor, followed by `Years_Exp`, then `Salary`, while `Uses_AI` remains weak or absent in the strongest runs (see the model output in `outputs/main_terminal_outputs.txt`).
+
+```{r variable-importance-ranking, echo=FALSE, message=FALSE, warning=FALSE}
+importance_rank <- c(
+  TimeSearching_Min = 2660.7569,
+  Years_Exp = 783.4335,
+  Salary = 214.9234
+)
+
+if (!exists("has_kableextra")) {
+  has_kableextra <- requireNamespace("kableExtra", quietly = TRUE)
+}
+if (!exists("style_simple_table")) {
+  style_simple_table <- function(tbl, caption = NULL) {
+    out <- knitr::kable(tbl, caption = caption, booktabs = TRUE)
+    if (has_kableextra) {
+      out <- kableExtra::kable_styling(
+        out,
+        latex_options = c("striped", "hold_position"),
+        full_width    = FALSE,
+        position      = "center"
+      )
+    }
+    out
+  }
+}
+
+importance_tbl <- data.frame(
+  Variable = names(importance_rank),
+  Importance = as.numeric(importance_rank),
+  row.names = NULL
+)
+style_simple_table(importance_tbl, caption = "Variable importance ranking")
+```
+
+This ranking matters because it shows that workflow friction is not just a split in the tree, but the main signal driving the model's predictions. It also supports the conclusion that AI usage is not the dominant factor once experience and time spent searching/debugging are taken into account.
+
+
+
+
 ### Model Complexity and Pruning Stability — Complexity Profile (CP)
 
 This analysis shows how the pruning threshold constrains tree size and prediction error.
@@ -286,7 +370,7 @@ This analysis shows how the pruning threshold constrains tree size and predictio
 ```{r cp-profile-table, echo=FALSE, message=FALSE, warning=FALSE}
 cp_profile <- read_csv("outputs/cart_cp_profile.csv", show_col_types = FALSE)
 
-cp_profile
+style_simple_table(cp_profile, caption = "Cost-complexity pruning profile")
 ```
 
 ```{r cp-profile-visual, echo=FALSE}
@@ -328,7 +412,7 @@ best_shuffle <- shuffle %>%
   arrange(xerror, desc(nsplit)) %>%
   slice(1)
 
-best_shuffle
+style_simple_table(best_shuffle, caption = "Best hyperparameter setting")
 ```
 
 Hyperparameter Shuffling results are taken from [outputs/cart_hyperparam_shuffle.csv](outputs/cart_hyperparam_shuffle.csv). The best usable setting is cp = 0.001, minsplit = 20, maxdepth = 5 (xerror = 0.98105, nsplit = 125).
@@ -380,7 +464,8 @@ Next, we verify that the main results are not artifacts of a single imputation d
 ```{r seed-sensitivity-table, echo=FALSE, message=FALSE, warning=FALSE}
 seed_averages <- read_csv("outputs/cart_mice_seed_averages.csv", show_col_types = FALSE)
 
-seed_averages %>% arrange(xerror)
+seed_table <- seed_averages %>% arrange(xerror)
+style_simple_table(seed_table, caption = "Seed sensitivity summary")
 ```
 
 ```{r seed-sensitivity-visual, echo=FALSE}
@@ -423,52 +508,11 @@ In this study the lowest observed `xerror` across the tested seeds occurred at `
 
 ### Testing for Robustness
 
-The corrected baseline does not support AI usage as a strong driver of job satisfaction. In the main tree, TimeSearching_Min is the dominant split variable, with Years_Exp and Salary following behind. This means the model is showing that workflow friction is the strongest signal in the fixed-imputation run.
+The robustness checks reinforce the tree and importance results. When the model settings are shuffled, the same pattern stays visible: the chosen tree still favors TimeSearching_Min under the best-performing settings, while AI usage remains weak and unstable. When the missing data is perturbed through the seed sensitivity check, the same broad conclusion holds.
+
+In the main tree, TimeSearching_Min is the dominant split variable, with Years_Exp and Salary following behind. This means the model is showing that workflow friction is the strongest signal in the fixed-imputation run.
 
 That is also why `Uses_AI` and `Is_Remote` can sit at zero in the importance plot: if a variable does not meaningfully improve the tree, `rpart` gives it no importance weight. So a flat zero does not mean the graph is broken; it means those variables did not matter in the final fitted model.
-
-### CART Tree
-
-```{r cart-tree-visual, echo=FALSE, message=FALSE, warning=FALSE}
-library(rpart)
-
-cart_df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
-
-cart_model <- rpart(
-  Job_Satisfaction ~ Uses_AI + Salary + TimeSearching_Min + Years_Exp + Is_Remote,
-  data = cart_df,
-  method = "anova",
-  control = rpart.control(cp = 0.001, minsplit = 20, maxdepth = 5)
-)
-
-plot(cart_model, uniform = TRUE, margin = 0.08, main = "CART Tree for Job Satisfaction")
-text(cart_model, use.n = TRUE, cex = 0.75)
-```
-
-The robustness checks explain why this matters. When the model settings are shuffled, the same pattern stays visible: the chosen tree still favors TimeSearching_Min under the best-performing settings, while AI usage remains weak and unstable. When the missing data is perturbed through the seed sensitivity check, the same broad conclusion holds. TimeSearching_Min stays dominant, Years_Exp and Salary remain secondary, and Uses_AI contributes little or nothing in most runs.
-
-The real drivers of satisfaction appear to be workflow friction, years of experience, and salary. This is closer to Herzberg's (1959) view that satisfaction rests on basic working conditions and compensation, not on a single new tool. AI may still matter in limited cases, but it is not the main driver of the tree. In the corrected baseline, the model points first to the time spent searching and debugging, then to experience and pay.
-
-This means GenAI is not a universal fix for low morale. It behaves more like a conditional feature than a core predictor. The 56% wage premium for AI skills (PricewaterhouseCoopers, 2025) can still work like "golden handcuffs" (Mitchell et al., 2001), but the tree does not show AI usage itself as the central force shaping satisfaction. 
-
-
-### Variable Importance Ranking
-
-The final model's variable importance ranking gives a simple summary of the same pattern seen in the tree and robustness checks. `TimeSearching_Min` is the strongest predictor, followed by `Years_Exp`, then `Salary`, while `Uses_AI` remains weak or absent in the strongest runs (see the model output in `outputs/main_terminal_outputs.txt`).
-
-```{r variable-importance-ranking, echo=FALSE, message=FALSE, warning=FALSE}
-importance_rank <- c(
-  TimeSearching_Min = 2660.7569,
-  Years_Exp = 783.4335,
-  Salary = 214.9234
-)
-
-importance_rank
-```
-
-This ranking matters because it shows that workflow friction is not just a split in the tree, but the main signal driving the model's predictions. It also supports the conclusion that AI usage is not the dominant factor once experience and time spent searching/debugging are taken into account.
-
-
 
 \Needspace{8\baselineskip}
 
@@ -525,14 +569,259 @@ Stack Overflow. (2024). 2024 Developer Survey. https://survey.stackoverflow.co/2
 Stephany, F., & Teutloff, O. (2024). What is the price of a skill? The value of complementarity. *Research Policy*, 53(1), 104927. https://doi.org/10.1016/j.respol.2023.104927
 
 ## Appendices
-Appendix A: Code (@Nythan)
+### Appendix A: Code
 
-The analysis code is included in the code chunks throughout this R Markdown document.
+```{r appendix-descriptive-statistics, eval=FALSE}
+library(dplyr)
+library(readr)
+library(knitr)
 
-Appendix B: Data Source
+has_kableextra <- requireNamespace("kableExtra", quietly = TRUE)
+
+df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
+
+summary_df <- df %>%
+  summarise(
+    n = n(),
+    JS_Mean     = mean(Job_Satisfaction,   na.rm = TRUE),
+    JS_SD       = sd(Job_Satisfaction,     na.rm = TRUE),
+    Salary_Mean = mean(Salary,             na.rm = TRUE),
+    Salary_SD   = sd(Salary,               na.rm = TRUE),
+    TimeSearch_Mean = mean(TimeSearching_Min, na.rm = TRUE),
+    TimeSearch_SD   = sd(TimeSearching_Min,   na.rm = TRUE),
+    YrsExp_Mean = mean(Years_Exp,          na.rm = TRUE),
+    YrsExp_SD   = sd(Years_Exp,            na.rm = TRUE),
+    AI_Rate     = mean(as.numeric(as.character(Uses_AI))  == 1, na.rm = TRUE),
+    Remote_Rate = mean(as.numeric(as.character(Is_Remote)) == 1, na.rm = TRUE)
+  )
+
+row1 <- summary_df %>% select(n, JS_Mean, JS_SD, Salary_Mean, Salary_SD, TimeSearch_Mean, TimeSearch_SD)
+row2 <- summary_df %>% select(YrsExp_Mean, YrsExp_SD, AI_Rate, Remote_Rate) %>%
+  rename(
+    `YrsExp Mean` = YrsExp_Mean,
+    `YrsExp SD`   = YrsExp_SD,
+    `AI Adoption Rate` = AI_Rate,
+    `Remote Rate` = Remote_Rate
+  )
+
+table1 <- knitr::kable(
+  row1,
+  digits  = 2,
+  caption = "Descriptive summary (Part 1 of 2)",
+  booktabs = TRUE,
+  col.names = c("n", "JS Mean", "JS SD", "Salary Mean", "Salary SD",
+                "TimeSearch Mean", "TimeSearch SD")
+)
+if (has_kableextra) {
+  table1 <- table1 %>%
+    kableExtra::kable_styling(
+      latex_options = c("striped", "hold_position"),
+      full_width    = FALSE,
+      position      = "center"
+    ) %>%
+    kableExtra::add_header_above(c(
+      " "              = 1,
+      "Job Satisfaction" = 2,
+      "Salary (USD)"   = 2,
+      "Time Searching (min)" = 2
+    ))
+}
+table1
+
+table2 <- knitr::kable(
+  row2,
+  digits   = 2,
+  caption  = "Descriptive summary (Part 2 of 2)",
+  booktabs = TRUE
+)
+if (has_kableextra) {
+  table2 <- table2 %>%
+    kableExtra::kable_styling(
+      latex_options = c("striped", "hold_position"),
+      full_width    = FALSE,
+      position      = "center"
+    ) %>%
+    kableExtra::add_header_above(c(
+      "Years of Experience" = 2,
+      "Binary Variables"    = 2
+    ))
+}
+table2
+
+table3 <- knitr::kable(
+  head(df),
+  digits   = 2,
+  caption  = "Sample first 6 rows of data (imputed using CART)",
+  booktabs = TRUE
+)
+if (has_kableextra) {
+  table3 <- table3 %>%
+    kableExtra::kable_styling(
+      latex_options = c("striped", "scale_down", "hold_position"),
+      full_width    = FALSE,
+      position      = "center"
+    )
+}
+table3
+```
+
+```{r appendix-cart-tree, eval=FALSE}
+library(rpart)
+
+cart_df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
+
+cart_model <- rpart(
+  Job_Satisfaction ~ Uses_AI + Salary + TimeSearching_Min + Years_Exp + Is_Remote,
+  data = cart_df,
+  method = "anova",
+  control = rpart.control(cp = 0.001, minsplit = 20, maxdepth = 5)
+)
+
+plot(cart_model, uniform = TRUE, margin = 0.08, main = "CART Tree for Job Satisfaction")
+text(cart_model, use.n = TRUE, cex = 0.75)
+```
+
+```{r appendix-cart-tree-figure, echo=FALSE, message=FALSE, warning=FALSE}
+library(rpart)
+
+cart_df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
+
+cart_model <- rpart(
+  Job_Satisfaction ~ Uses_AI + Salary + TimeSearching_Min + Years_Exp + Is_Remote,
+  data = cart_df,
+  method = "anova",
+  control = rpart.control(cp = 0.001, minsplit = 20, maxdepth = 5)
+)
+
+plot(cart_model, uniform = TRUE, margin = 0.08, main = "CART Tree for Job Satisfaction")
+text(cart_model, use.n = TRUE, cex = 0.75)
+```
+
+```{r appendix-variable-importance, eval=FALSE}
+importance_rank <- c(
+  TimeSearching_Min = 2660.7569,
+  Years_Exp = 783.4335,
+  Salary = 214.9234
+)
+
+importance_rank
+```
+
+```{r appendix-cp-profile-table, eval=FALSE}
+cp_profile <- read_csv("outputs/cart_cp_profile.csv", show_col_types = FALSE)
+
+cp_profile
+```
+
+```{r appendix-cp-profile-visual, eval=FALSE}
+plot(
+  cp_profile$CP,
+  cp_profile$xerror,
+  type = "b",
+  pch = 19,
+  col = "#2F5AA8",
+  xlim = rev(range(cp_profile$CP)),
+  xlab = "Complexity Parameter (CP)",
+  ylab = "Cross-Validated Error (xerror)",
+  main = "Cost-Complexity Pruning Profile"
+)
+
+abline(v = 0.001, lty = 2, lwd = 2, col = "#C0392B")
+text(0.001, max(cp_profile$xerror), labels = "cp = 0.001", pos = 4, cex = 0.8, col = "#C0392B")
+```
+
+```{r appendix-hyperparam-shuffling-table, eval=FALSE}
+shuffle <- read_csv("outputs/cart_hyperparam_shuffle.csv", show_col_types = FALSE)
+
+best_shuffle <- shuffle %>%
+  filter(status == "ok") %>%
+  arrange(xerror, desc(nsplit)) %>%
+  slice(1)
+
+best_shuffle
+```
+
+```{r appendix-hyperparam-shuffling-visual, eval=FALSE}
+valid_shuffle <- shuffle %>%
+  filter(status == "ok", !is.na(cp), !is.na(xerror), !is.na(nsplit))
+
+max_splits <- max(valid_shuffle$nsplit, na.rm = TRUE)
+point_cex <- ifelse(
+  valid_shuffle$nsplit == 0,
+  1.35,
+  0.75 + (valid_shuffle$nsplit / max_splits) * 1.7
+)
+point_col <- ifelse(valid_shuffle$nsplit == 0, "#C0392B", "#2F5AA8")
+
+plot(
+  valid_shuffle$cp,
+  valid_shuffle$xerror,
+  pch = 19,
+  cex = point_cex,
+  col = point_col,
+  xlab = "Pruning Strength (cp)",
+  ylab = "Cross-Validated Error (xerror)",
+  main = "Hyperparameter Shuffling: xerror by cp (size = nsplit)"
+)
+
+abline(v = 0.001, lty = 2, lwd = 2, col = "#16A085")
+text(0.001, max(valid_shuffle$xerror), labels = "cp = 0.001", pos = 4, cex = 0.8, col = "#16A085")
+
+legend(
+  "topright",
+  legend = c("nsplit > 0", "nsplit = 0 (over-pruned)", "larger point = more splits"),
+  pch = c(19, 19, 19),
+  pt.cex = c(1.2, 1.2, 2.0),
+  col = c("#2F5AA8", "#C0392B", "#2F5AA8"),
+  bty = "n",
+  cex = 0.8
+)
+```
+
+```{r appendix-seed-sensitivity-table, eval=FALSE}
+seed_averages <- read_csv("outputs/cart_mice_seed_averages.csv", show_col_types = FALSE)
+
+seed_averages %>% arrange(xerror)
+```
+
+```{r appendix-seed-sensitivity-visual, eval=FALSE}
+imp_vars <- c("TimeSearching_Min", "Years_Exp", "Salary", "Uses_AI", "Is_Remote")
+seed_plot <- seed_averages %>%
+  select(seed, all_of(imp_vars)) %>%
+  arrange(seed)
+
+imp_mat <- as.matrix(seed_plot[, imp_vars])
+imp_share <- imp_mat / rowSums(imp_mat)
+
+matplot(
+  seed_plot$seed,
+  imp_share,
+  type = "b",
+  pch = c(19, 17, 15, 1, 2),
+  lty = 1,
+  lwd = c(2.6, 2.0, 2.0, 1.8, 1.8),
+  col = c("#1E8449", "#2E86C1", "#7D3C98", "#C0392B", "#7F8C8D"),
+  xlab = "Imputation Seed",
+  ylab = "Relative Variable Importance (share)",
+  main = "Variable Importance Stability Across Seeds"
+)
+
+legend(
+  "topright",
+  legend = c("TimeSearching_Min", "Years_Exp", "Salary", "Uses_AI", "Is_Remote"),
+  col = c("#1E8449", "#2E86C1", "#7D3C98", "#C0392B", "#7F8C8D"),
+  pch = c(19, 17, 15, 1, 2),
+  lty = 1,
+  lwd = c(2.6, 2.0, 2.0, 1.8, 1.8),
+  bty = "n",
+  cex = 0.8
+)
+```
+
+### Appendix B: Data Source
 Stack Overflow. (2024). 2024 Developer Survey. Retrieved from https://survey.stackoverflow.co/2024/
 
-Appendix C: Notes on Random Seeds
+### Appendix C: Notes on Random Seeds
 
 Random seeds initialize pseudorandom number generators (PRNGs) so that stochastic processes (like MICE imputations or algorithmic subsampling) can be reproduced exactly. A seed is not a model parameter — it only fixes the RNG state for reproducibility. Because different seeds can produce slightly different imputations or model splits, reporting the seed and testing sensitivity across several seeds is good practice for transparency.
 
