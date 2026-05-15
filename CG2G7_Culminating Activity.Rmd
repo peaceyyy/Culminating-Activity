@@ -267,7 +267,7 @@ The imputed analysis sample provides the descriptive base for the rest of the ch
 
 ### CART Tree
 
-```{r cart-tree-visual, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.width=7.5, fig.height=4.8, out.width='0.95\\linewidth'}
+```{r cart-tree-visual, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.width=7.5, fig.height=4.8, out.width='0.95\\linewidth', fig.pos="H", fig.cap="CART Tree for Job Satisfaction (Seed 200, Corrected Baseline)"}
 library(rpart)
 library(rpart.plot)
 
@@ -382,7 +382,7 @@ kable(
   row_spec(0, bold = TRUE, background = "#2C6E9E", color = "white")
 ```
 
-```{r cp-profile-visual, echo=FALSE, fig.width=7, fig.height=4, fig.cap="Cross-Validated Error by Complexity Parameter (CP)", message=FALSE, warning=FALSE}
+```{r cp-profile-visual, echo=FALSE, fig.width=7, fig.height=4, fig.pos="H", fig.align='center', out.width='0.95\\linewidth', fig.cap="Cross-Validated Error by Complexity Parameter (CP)", message=FALSE, warning=FALSE}
 library(ggplot2)
 
 cp_plot_data <- cp_profile %>%
@@ -487,7 +487,7 @@ Hyperparameter Shuffling results are taken from [outputs/cart_hyperparam_shuffle
 
 By contrast, larger cp values (e.g., 0.008–0.02) frequently produce nsplit = 0 (which shows over-pruning). Ove  r-pruning happens when the pruning penalty (CP) requires a splitting gain larger than any candidate split provides, so rpart collapses the tree to its root. The practical effects are underfitting (the model cannot partition the data), loss of variable‑importance information, and misleading simplicity: a pruned tree with nsplit = 0 may appear stable but offers no explanatory partitions. Use the CP profile and grid search to pick cp near the elbow (about 0.001), where xerror is low and nsplit > 0, balancing interpretability and generalization.
 
-```{r hyperparam-shuffling-visual, echo=FALSE, fig.width=7.5, fig.height=4.5, fig.cap="Cross-Validated Error by CP Across Hyperparameter Combinations", message=FALSE, warning=FALSE}
+```{r hyperparam-shuffling-visual, echo=FALSE, fig.width=7.5, fig.height=4.5, fig.pos="H", fig.align='center', out.width='0.95\\linewidth', fig.cap="Cross-Validated Error by CP Across Hyperparameter Combinations", message=FALSE, warning=FALSE}
 library(ggplot2)
 
 shuffle_ok <- shuffle %>%
@@ -576,7 +576,7 @@ kable(
            general_title = "Note: ", footnote_as_chunk = TRUE)
 ```
 
-```{r seed-sensitivity-visual, echo=FALSE}
+```{r seed-sensitivity-visual, echo=FALSE, fig.width=7, fig.height=4.2, fig.pos="H", fig.align='center', out.width='0.95\\linewidth', fig.cap="Variable Importance Stability Across Different Imputation Seeds", message=FALSE, warning=FALSE}
 imp_vars <- c("TimeSearching_Min", "Years_Exp", "Salary", "Uses_AI", "Is_Remote")
 seed_plot <- seed_averages %>%
   select(seed, all_of(imp_vars)) %>%
