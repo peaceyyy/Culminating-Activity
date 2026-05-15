@@ -1,18 +1,33 @@
 ---
 title: "Culminating Activity"
-author: "Aloba, Loyan Edrian | Dalmonte, Frank \\\ Delrio, Martin Nicholas | Dorin, Homer Adriel | Rivera, Nythan"
 output:
   pdf_document:
     latex_engine: xelatex
 header-includes:
   - \usepackage{setspace}
   - \usepackage{needspace}
+  - \usepackage[margin=1in]{geometry}
+  - \usepackage{microtype}
+  - \usepackage{xurl}
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
+  - \setlength{\emergencystretch}{3em}
   - \onehalfspacing
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+\begin{center}
+\vspace{0.2em}
+Aloba, Loyan Edrian | Dalmonte, Frank\\
+Delrio, Martin Nicholas | Dorin, Homer Adriel |\\
+Rivera, Nythan
+\end{center}
+
+\vspace{1em}
+
 # Abstract 
 This study examines the “GenAI Productivity–Satisfaction Tradeoff” among full‑time software developers using the Stack Overflow 2024 Developer Survey. We built CART predictive models using AI usage, salary, years of experience, remote status, and time spent searching and debugging. Workflow friction (time spent searching and debugging) was the strongest predictor of job satisfaction, with years of experience and salary as secondary predictors; direct AI usage was weak and unstable across hyperparameter and seed‑sensitivity checks, and higher pay did not fully offset the day‑to‑day friction associated with AI‑assisted workflows (as measured by time spent searching for answers online and debugging code). The study was motivated by the hypothesis that AI use could raise compensation while also introducing unintended mental and emotional burdens, creating a potential tradeoff between economic gain and everyday well‑being. Missing data were handled via MICE with CART imputations, and model stability was assessed across multiple seeds and hyperparameter settings.
 
@@ -37,11 +52,11 @@ Does a higher salary offset the negative impact of workflow friction when predic
 To investigate the "GenAI Productivity-Satisfaction Tradeoff" by developing a predictive model that evaluates how AI tool adoption, financial compensation, and workflow friction interact to determine a software developer's overall job satisfaction.
 
 ### Specific Objectives
-To determine the extent to which AI tool adoption serves as a predictor for both financial compensation and workflow friction (time spent searching and debugging).
+1. To determine the extent to which AI tool adoption serves as a predictor for both financial compensation and workflow friction (time spent searching and debugging).
 
-To identify the primary predictors of developer job satisfaction using a Classification and Regression Tree (CART) machine learning model.
+2. To identify the primary predictors of developer job satisfaction using a Classification and Regression Tree (CART) machine learning model.
 
-To evaluate the interaction between compensation and workflow friction, specifically testing if a higher salary offsets the negative predictive impact of AI-induced friction on overall job satisfaction.
+3. To evaluate the interaction between compensation and workflow friction, specifically testing if a higher salary offsets the negative predictive impact of AI-induced friction on overall job satisfaction.
 
 
 ## Hypotheses
@@ -138,7 +153,7 @@ Job Satisfaction is the outcome variable in this framework. AI Tool Adoption is 
 This study uses a quantitative, descriptive-correlational design to examine how AI adoption, salary, and workflow friction (as measured by Time Spent Searching & Debugging in minutes) relate to developer job satisfaction.
 
 ### Data Collection
-The study uses secondary data from the Stack Overflow 2024 Developer Survey. The raw CSV is provided in the repository [data/survey_results_public.csv](data/survey_results_public.csv); the analysis filters this file to full-time respondents (see `filter_columns.r`) and writes the filtered table to [outputs/data_filtered_columns.csv](outputs/data_filtered_columns.csv). The survey schema is included as [data/survey_results_schema.csv](data/survey_results_schema.csv) for a clearer understanding of the possible columns from the original survey questionnaire. 
+The study uses secondary data from the Stack Overflow 2024 Developer Survey. The raw CSV is provided in the repository [data/survey_results_public.csv](data/survey_results_public.csv); the analysis filters this file to full-time respondents (see `filter_columns.r`) and writes the filtered table to [outputs/data_filtered_columns.csv](outputs/data_filtered_columns.csv). The survey schema is included as [data/survey_results_schema.csv](data/survey_results_schema.csv) for a clearer understanding of the possible columns from the original survey questionnaire. All code, imputation scripts, and data outputs are publicly available; see Appendix D for repository details. 
 
 Compensation and satisfaction responses are vulnerable to MNAR (Missing Not At Random) bias, so the analysis uses MICE with Classification and Regression Trees instead of listwise deletion.
 
@@ -183,102 +198,66 @@ The seed-sensitivity workflow is documented in [cart_robustness_check.r](cart_ro
 ## Chapter 4: Results and Discussion
 ### Descriptive Statistics 
 
-
-Visualization
-
 ```{r descriptive-statistics, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(readr)
 library(knitr)
-
-has_kableextra <- requireNamespace("kableExtra", quietly = TRUE)
+library(kableExtra)
 
 df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
 
 summary_df <- df %>%
   summarise(
     n = n(),
-    JS_Mean     = mean(Job_Satisfaction,   na.rm = TRUE),
-    JS_SD       = sd(Job_Satisfaction,     na.rm = TRUE),
-    Salary_Mean = mean(Salary,             na.rm = TRUE),
-    Salary_SD   = sd(Salary,               na.rm = TRUE),
-    TimeSearch_Mean = mean(TimeSearching_Min, na.rm = TRUE),
-    TimeSearch_SD   = sd(TimeSearching_Min,   na.rm = TRUE),
-    YrsExp_Mean = mean(Years_Exp,          na.rm = TRUE),
-    YrsExp_SD   = sd(Years_Exp,            na.rm = TRUE),
-    AI_Rate     = mean(as.numeric(as.character(Uses_AI))  == 1, na.rm = TRUE),
-    Remote_Rate = mean(as.numeric(as.character(Is_Remote)) == 1, na.rm = TRUE)
+    Job_Satisfaction_mean = mean(Job_Satisfaction, na.rm = TRUE),
+    Job_Satisfaction_sd   = sd(Job_Satisfaction,   na.rm = TRUE),
+    Salary_mean           = mean(Salary,            na.rm = TRUE),
+    Salary_sd             = sd(Salary,              na.rm = TRUE),
+    TimeSearching_Min_mean = mean(TimeSearching_Min, na.rm = TRUE),
+    TimeSearching_Min_sd   = sd(TimeSearching_Min,   na.rm = TRUE),
+    Years_Exp_mean = mean(Years_Exp, na.rm = TRUE),
+    Years_Exp_sd   = sd(Years_Exp,   na.rm = TRUE),
+    Uses_AI_rate   = mean(Uses_AI   == 1, na.rm = TRUE),
+    Is_Remote_rate = mean(Is_Remote == 1, na.rm = TRUE)
   )
 
-# Split into two display rows so it fits on the page
-row1 <- summary_df %>% select(n, JS_Mean, JS_SD, Salary_Mean, Salary_SD, TimeSearch_Mean, TimeSearch_SD)
-row2 <- summary_df %>% select(YrsExp_Mean, YrsExp_SD, AI_Rate, Remote_Rate) %>%
-  rename(
-    `YrsExp Mean` = YrsExp_Mean,
-    `YrsExp SD`   = YrsExp_SD,
-    `AI Adoption Rate` = AI_Rate,
-    `Remote Rate` = Remote_Rate
+desc_display <- data.frame(
+  Variable = c("Job Satisfaction", "Salary (USD)", "Time Searching (min)",
+               "Years Experience", "Uses AI (%)", "Is Remote (%)"),
+  Mean_or_Rate = c(
+    round(summary_df$Job_Satisfaction_mean, 2),
+    round(summary_df$Salary_mean, 0),
+    round(summary_df$TimeSearching_Min_mean, 2),
+    round(summary_df$Years_Exp_mean, 2),
+    round(summary_df$Uses_AI_rate * 100, 1),
+    round(summary_df$Is_Remote_rate * 100, 1)
+  ),
+  SD_or_Note = c(
+    round(summary_df$Job_Satisfaction_sd, 2),
+    round(summary_df$Salary_sd, 0),
+    round(summary_df$TimeSearching_Min_sd, 2),
+    round(summary_df$Years_Exp_sd, 2),
+    NA, NA
   )
+)
 
-table1 <- knitr::kable(
-  row1,
-  digits  = 2,
-  caption = "Descriptive summary (Part 1 of 2)",
+kable(
+  desc_display,
+  caption  = paste0("Descriptive Statistics (N = ", summary_df$n, ", full-time developers)"),
   booktabs = TRUE,
-  col.names = c("n", "JS Mean", "JS SD", "Salary Mean", "Salary SD",
-                "TimeSearch Mean", "TimeSearch SD")
-)
-if (has_kableextra) {
-  table1 <- table1 %>%
-    kableExtra::kable_styling(
-      latex_options = c("striped", "hold_position"),
-      full_width    = FALSE,
-      position      = "center"
-    ) %>%
-    kableExtra::add_header_above(c(
-      " "              = 1,
-      "Job Satisfaction" = 2,
-      "Salary (USD)"   = 2,
-      "Time Searching (min)" = 2
-    ))
-}
-table1
-
-table2 <- knitr::kable(
-  row2,
-  digits   = 2,
-  caption  = "Descriptive summary (Part 2 of 2)",
-  booktabs = TRUE
-)
-if (has_kableextra) {
-  table2 <- table2 %>%
-    kableExtra::kable_styling(
-      latex_options = c("striped", "hold_position"),
-      full_width    = FALSE,
-      position      = "center"
-    ) %>%
-    kableExtra::add_header_above(c(
-      "Years of Experience" = 2,
-      "Binary Variables"    = 2
-    ))
-}
-table2
-
-table3 <- knitr::kable(
-  head(df),
-  digits   = 2,
-  caption  = "Sample first 6 rows of data (imputed using CART)",
-  booktabs = TRUE
-)
-if (has_kableextra) {
-  table3 <- table3 %>%
-    kableExtra::kable_styling(
-      latex_options = c("striped", "scale_down", "hold_position"),
-      full_width    = FALSE,
-      position      = "center"
-    )
-}
-table3
+  linesep  = "",
+  col.names = c("Variable", "Mean / Rate", "Std. Dev."),
+  align    = c("l", "r", "r")
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width    = FALSE,
+    font_size     = 10
+  ) %>%
+  row_spec(0, bold = TRUE, background = "#2C6E9E", color = "white") %>%
+  row_spec(5:6, italic = TRUE) %>%
+  footnote(general = "SD not applicable for binary rate variables.",
+           general_title = "Note: ", footnote_as_chunk = TRUE)
 ```
 
 The descriptive table above is computed from [outputs/data_imputed_primary.csv](outputs/data_imputed_primary.csv).
@@ -288,7 +267,7 @@ The imputed analysis sample provides the descriptive base for the rest of the ch
 
 ### CART Tree
 
-```{r cart-tree-visual, echo=FALSE, message=FALSE, warning=FALSE}
+```{r cart-tree-visual, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.width=7.5, fig.height=4.8, out.width='0.95\\linewidth'}
 library(rpart)
 library(rpart.plot)
 
@@ -308,8 +287,11 @@ rpart.plot(
   under = TRUE,
   fallen.leaves = TRUE,
   cex = 0.75,
-    )
+  main = "CART Tree for Job Satisfaction"
+)
 ```
+
+The tree graphic shows the first split on TimeSearching_Min and how later branches separate by Years_Exp and Salary, with terminal nodes reporting predicted satisfaction levels.
 
 The tree highlights workflow friction (time spent searching and debugging) as the dominant split in the corrected baseline, with years of experience and salary appearing as secondary signals.
 
@@ -367,27 +349,76 @@ This ranking matters because it shows that workflow friction is not just a split
 This analysis shows how the pruning threshold constrains tree size and prediction error.
 
 ```{r cp-profile-table, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
 cp_profile <- read_csv("outputs/cart_cp_profile.csv", show_col_types = FALSE)
+cp_profile <- cp_profile %>%
+  rename_with(~ gsub(" ", "_", tolower(.x)))
 
-style_simple_table(cp_profile, caption = "Cost-complexity pruning profile")
+cp_profile_display <- cp_profile %>%
+  rename(
+    `CP` = cp,
+    `N Splits` = nsplit,
+    `Rel. Error` = rel_error,
+    `X-Error` = xerror,
+    `X-Std Dev` = xstd
+  ) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 6)))
+
+kable(
+  cp_profile_display,
+  caption  = "CP Profile: Complexity Parameter vs. Cross-Validated Error",
+  booktabs = TRUE,
+  linesep  = "",
+  align    = c("r", "r", "r", "r", "r")
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down"),
+    full_width    = FALSE,
+    font_size     = 10
+  ) %>%
+  column_spec(4, bold = TRUE, color = "#2C6E9E") %>%
+  row_spec(0, bold = TRUE, background = "#2C6E9E", color = "white")
 ```
 
-```{r cp-profile-visual, echo=FALSE}
-plot(
-  cp_profile$CP,
-  cp_profile$xerror,
-  type = "b",
-  pch = 19,
-  col = "#2F5AA8",
-  xlim = rev(range(cp_profile$CP)),
-  xlab = "Complexity Parameter (CP)",
-  ylab = "Cross-Validated Error (xerror)",
-  main = "Cost-Complexity Pruning Profile"
-)
+```{r cp-profile-visual, echo=FALSE, fig.width=7, fig.height=4, fig.cap="Cross-Validated Error by Complexity Parameter (CP)", message=FALSE, warning=FALSE}
+library(ggplot2)
 
-abline(v = 0.001, lty = 2, lwd = 2, col = "#C0392B")
-text(0.001, max(cp_profile$xerror), labels = "cp = 0.001", pos = 4, cex = 0.8, col = "#C0392B")
+cp_plot_data <- cp_profile %>%
+  mutate(
+    cp_label  = round(cp, 5),
+    highlight = ifelse(cp == min(cp), "Selected (CP = 0.001)", "Other CPs")
+  )
+
+ggplot(cp_plot_data, aes(x = cp, y = xerror)) +
+  geom_line(color = "#4A90D9", linewidth = 1, linetype = "solid") +
+  geom_point(aes(color = highlight, size = highlight)) +
+  scale_color_manual(values = c("Selected (CP = 0.001)" = "#C0392B",
+                                "Other CPs"             = "#2C6E9E")) +
+  scale_size_manual(values  = c("Selected (CP = 0.001)" = 4,
+                                "Other CPs"             = 2.5)) +
+  scale_x_reverse() +
+  labs(
+    title    = "CP Profile: Model Complexity vs. Cross-Validated Error",
+    x        = "Complexity Parameter (CP)  [decreasing ->]",
+    y        = "Cross-Validated Error (xerror)",
+    color    = NULL,
+    size     = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.title      = element_text(face = "bold", size = 12, hjust = 0),
+    axis.title      = element_text(size = 10),
+    legend.position = "top",
+    legend.text     = element_text(size = 9),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey90"),
+    plot.background  = element_rect(fill = "white", color = NA)
+  )
 ```
+
+The curve shows xerror decreasing as CP loosens, with the highlighted point indicating the selected pruning level where error stabilizes.
 
 The CP profile in [outputs/cart_cp_profile.csv](outputs/cart_cp_profile.csv) supports the same conclusion but from another angle. In a decision tree algorithm, the CP balances predictive accuracy against structural complexity, effectively preventing the model from making unnecessary, hyper-granular splits that lead to overfitting.
 
@@ -404,6 +435,9 @@ This behavior makes the chosen tree complexity highly defensible: the model atta
 With the CP stabilization point at 0.001 identified, we now examine which hyperparameter combination achieves the best balance of accuracy and interpretability.
 
 ```{r hyperparam-shuffling-table, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
 shuffle <- read_csv("outputs/cart_hyperparam_shuffle.csv", show_col_types = FALSE)
 
 best_shuffle <- shuffle %>%
@@ -411,49 +445,91 @@ best_shuffle <- shuffle %>%
   arrange(xerror, desc(nsplit)) %>%
   slice(1)
 
-style_simple_table(best_shuffle, caption = "Best hyperparameter setting")
+top_shuffle <- shuffle %>%
+  filter(status == "ok") %>%
+  arrange(xerror, desc(nsplit)) %>%
+  slice(1:10) %>%
+  select(cp, minsplit, maxdepth, nsplit, xerror) %>%
+  rename(
+    `CP`        = cp,
+    `Min Split` = minsplit,
+    `Max Depth` = maxdepth,
+    `N Splits`  = nsplit,
+    `X-Error`   = xerror
+  ) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 6)))
+
+kable(
+  top_shuffle,
+  caption  = "Top 10 Hyperparameter Combinations by Cross-Validated Error",
+  booktabs = TRUE,
+  linesep  = "",
+  align    = c("r", "r", "r", "r", "r")
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down"),
+    full_width    = FALSE,
+    font_size     = 10
+  ) %>%
+  row_spec(1, bold = TRUE, background = "#EAF4EC", color = "#2D6A2D") %>%
+  row_spec(0, bold = TRUE, background = "#2C6E9E", color = "white") %>%
+  footnote(
+    general         = paste0("Best combination: CP = ", best_shuffle$cp,
+                             ", minsplit = ", best_shuffle$minsplit,
+                             ", maxdepth = ", best_shuffle$maxdepth,
+                             " (xerror = ", round(best_shuffle$xerror, 5), ")"),
+    general_title   = "Note: ",
+    footnote_as_chunk = TRUE
+  )
 ```
 
 Hyperparameter Shuffling results are taken from [outputs/cart_hyperparam_shuffle.csv](outputs/cart_hyperparam_shuffle.csv). The best usable setting is cp = 0.001, minsplit = 20, maxdepth = 5 (xerror = 0.98105, nsplit = 125).
 
 By contrast, larger cp values (e.g., 0.008–0.02) frequently produce nsplit = 0 (which shows over-pruning). Ove  r-pruning happens when the pruning penalty (CP) requires a splitting gain larger than any candidate split provides, so rpart collapses the tree to its root. The practical effects are underfitting (the model cannot partition the data), loss of variable‑importance information, and misleading simplicity: a pruned tree with nsplit = 0 may appear stable but offers no explanatory partitions. Use the CP profile and grid search to pick cp near the elbow (about 0.001), where xerror is low and nsplit > 0, balancing interpretability and generalization.
 
-```{r hyperparam-shuffling-visual, echo=FALSE}
-valid_shuffle <- shuffle %>%
-  filter(status == "ok", !is.na(cp), !is.na(xerror), !is.na(nsplit))
+```{r hyperparam-shuffling-visual, echo=FALSE, fig.width=7.5, fig.height=4.5, fig.cap="Cross-Validated Error by CP Across Hyperparameter Combinations", message=FALSE, warning=FALSE}
+library(ggplot2)
 
-max_splits <- max(valid_shuffle$nsplit, na.rm = TRUE)
-point_cex <- ifelse(
-  valid_shuffle$nsplit == 0,
-  1.35,
-  0.75 + (valid_shuffle$nsplit / max_splits) * 1.7
-)
-point_col <- ifelse(valid_shuffle$nsplit == 0, "#C0392B", "#2F5AA8")
+shuffle_ok <- shuffle %>%
+  filter(status == "ok") %>%
+  mutate(
+    maxdepth_label = paste0("Max Depth = ", maxdepth),
+    best_flag      = (cp == best_shuffle$cp &
+                      minsplit == best_shuffle$minsplit &
+                      maxdepth == best_shuffle$maxdepth)
+  )
 
-plot(
-  valid_shuffle$cp,
-  valid_shuffle$xerror,
-  pch = 19,
-  cex = point_cex,
-  col = point_col,
-  xlab = "Pruning Strength (cp)",
-  ylab = "Cross-Validated Error (xerror)",
-  main = "Hyperparameter Shuffling: xerror by cp (size = nsplit)"
-)
-
-abline(v = 0.001, lty = 2, lwd = 2, col = "#16A085")
-text(0.001, max(valid_shuffle$xerror), labels = "cp = 0.001", pos = 4, cex = 0.8, col = "#16A085")
-
-legend(
-  "topright",
-  legend = c("nsplit > 0", "nsplit = 0 (over-pruned)", "larger point = more splits"),
-  pch = c(19, 19, 19),
-  pt.cex = c(1.2, 1.2, 2.0),
-  col = c("#2F5AA8", "#C0392B", "#2F5AA8"),
-  bty = "n",
-  cex = 0.8
-)
+ggplot(shuffle_ok, aes(x = factor(cp), y = xerror, color = factor(minsplit))) +
+  geom_jitter(aes(size = best_flag), width = 0.2, alpha = 0.75) +
+  geom_point(
+    data  = shuffle_ok %>% filter(best_flag),
+    color = "#C0392B", shape = 18, size = 5.5
+  ) +
+  scale_size_manual(values = c("TRUE" = 4, "FALSE" = 2), guide = "none") +
+  facet_wrap(~ maxdepth_label, nrow = 1) +
+  scale_color_brewer(palette = "Set2", name = "Min Split") +
+  labs(
+    title    = "Hyperparameter Shuffle: xerror by CP, Min Split, and Max Depth",
+    subtitle = paste0("Red diamond = best combination (CP = ", best_shuffle$cp,
+                      ", minsplit = ", best_shuffle$minsplit,
+                      ", maxdepth = ", best_shuffle$maxdepth, ")"),
+    x        = "Complexity Parameter (CP)",
+    y        = "Cross-Validated Error (xerror)"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    plot.title       = element_text(face = "bold", size = 11, hjust = 0),
+    plot.subtitle    = element_text(size = 8.5, color = "grey45", hjust = 0),
+    axis.text.x      = element_text(angle = 45, hjust = 1, size = 8),
+    strip.text       = element_text(face = "bold", size = 9),
+    strip.background = element_rect(fill = "#EEF4FB", color = NA),
+    panel.grid.minor = element_blank(),
+    legend.position  = "right",
+    plot.background  = element_rect(fill = "white", color = NA)
+  )
 ```
+
+The jittered points compare xerror across CP, minsplit, and maxdepth, and the red diamond marks the best-performing combination.
 
 
 ### Set Seed Sensitivity
@@ -461,10 +537,43 @@ legend(
 Next, we verify that the main results are not artifacts of a single imputation draw by testing sensitivity across different random seeds.
 
 ```{r seed-sensitivity-table, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
 seed_averages <- read_csv("outputs/cart_mice_seed_averages.csv", show_col_types = FALSE)
 
-seed_table <- seed_averages %>% arrange(xerror)
-style_simple_table(seed_table, caption = "Seed sensitivity summary")
+seed_display <- seed_averages %>%
+  arrange(xerror) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 5))) %>%
+  rename(
+    `Seed`             = seed,
+    `X-Error`          = xerror,
+    `Time Searching`   = TimeSearching_Min,
+    `Years Exp.`       = Years_Exp,
+    `Salary`           = Salary,
+    `Uses AI`          = Uses_AI,
+    `Is Remote`        = Is_Remote
+  )
+
+xerror_vals <- seed_display$`X-Error`
+best_seed_row <- which.min(replace(xerror_vals, is.na(xerror_vals), Inf))
+
+kable(
+  seed_display,
+  caption  = "Seed Sensitivity: Variable Importance by Imputation Seed",
+  booktabs = TRUE,
+  linesep  = "",
+  align    = rep("r", ncol(seed_display))
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down"),
+    full_width    = FALSE,
+    font_size     = 10
+  ) %>%
+  row_spec(best_seed_row, bold = TRUE, background = "#EAF4EC", color = "#2D6A2D") %>%
+  row_spec(0, bold = TRUE, background = "#2C6E9E", color = "white") %>%
+  footnote(general = "Green row = lowest xerror (best seed). Variable importance columns sum to ~1.",
+           general_title = "Note: ", footnote_as_chunk = TRUE)
 ```
 
 ```{r seed-sensitivity-visual, echo=FALSE}
@@ -501,21 +610,21 @@ legend(
 )
 ```
 
-The MICE averages in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv) show that the model is not driven by a single imputation draw. Across the tested seeds, TimeSearching_Min stays the strongest signal, while Years_Exp and Salary remain secondary. Uses_AI stays weak or near zero in most runs, which suggests that the direct effect of AI adoption is not stable once missing data is re-generated.
+The lines show each variable's share of total importance by seed, highlighting that TimeSearching_Min stays dominant while Uses_AI remains small across imputations.
+
+The MICE averag es in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv) show that the model is not driven by a single imputation draw. Across the tested seeds, TimeSearching_Min stays the strongest signal, while Years_Exp and Salary remain secondary. Uses_AI stays weak or near zero in most runs, which suggests that the direct effect of AI adoption is not stable once missing data is re-generated.
 
 In this study the lowest observed `xerror` across the tested seeds occurred at `set.seed(200)` (xerror about 0.9784), so the main results are reported using the imputed dataset generated with `set.seed(200)`. The full seed-run results are available in [outputs/cart_mice_seed_runs.csv](outputs/cart_mice_seed_runs.csv) and summarized in [outputs/cart_mice_seed_averages.csv](outputs/cart_mice_seed_averages.csv).
 
 ### Testing for Robustness
 
-The robustness checks reinforce the tree and importance results. When the model settings are shuffled, the same pattern stays visible: the chosen tree still favors TimeSearching_Min under the best-performing settings, while AI usage remains weak and unstable. When the missing data is perturbed through the seed sensitivity check, the same broad conclusion holds.
+The robustness checks reinforce the tree and importance results. When the model settings are shuffled, the same pattern stays visible: the chosen tree still favors TimeSearching_Min under the best-performing settings, while AI usage remains weak and unstable. 
 
 In the main tree, TimeSearching_Min is the dominant split variable, with Years_Exp and Salary following behind. This means the model is showing that workflow friction is the strongest signal in the fixed-imputation run.
 
 That is also why `Uses_AI` and `Is_Remote` can sit at zero in the importance plot: if a variable does not meaningfully improve the tree, `rpart` gives it no importance weight. So a flat zero does not mean the graph is broken; it means those variables did not matter in the final fitted model.
 
 \Needspace{8\baselineskip}
-
-### Interpretation
 
 Taken together, the evidence suggests that the main tree is stable in its structure at the chosen hyperparameters, but the importance ranking is sensitive to imputation. In the corrected baseline, TimeSearching_Min is the strongest predictor, with Years_Exp and Salary trailing behind. When the missing data are dealt with through different imputations, workflow friction remains the most influential variable, while Uses_AI stays weak and unstable. This shows a weak and non-robust direct link between AI use and job satisfaction, while workflow friction, years of experience, and salary remain the strongest and most consistent signals.
 
@@ -569,100 +678,22 @@ Stephany, F., & Teutloff, O. (2024). What is the price of a skill? The value of 
 
 ## Appendices
 ### Appendix A: Code
+#### Code for Setup
 
-```{r appendix-descriptive-statistics, eval=FALSE}
-library(dplyr)
-library(readr)
-library(knitr)
-
-has_kableextra <- requireNamespace("kableExtra", quietly = TRUE)
-
-df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
-
-summary_df <- df %>%
-  summarise(
-    n = n(),
-    JS_Mean     = mean(Job_Satisfaction,   na.rm = TRUE),
-    JS_SD       = sd(Job_Satisfaction,     na.rm = TRUE),
-    Salary_Mean = mean(Salary,             na.rm = TRUE),
-    Salary_SD   = sd(Salary,               na.rm = TRUE),
-    TimeSearch_Mean = mean(TimeSearching_Min, na.rm = TRUE),
-    TimeSearch_SD   = sd(TimeSearching_Min,   na.rm = TRUE),
-    YrsExp_Mean = mean(Years_Exp,          na.rm = TRUE),
-    YrsExp_SD   = sd(Years_Exp,            na.rm = TRUE),
-    AI_Rate     = mean(as.numeric(as.character(Uses_AI))  == 1, na.rm = TRUE),
-    Remote_Rate = mean(as.numeric(as.character(Is_Remote)) == 1, na.rm = TRUE)
-  )
-
-row1 <- summary_df %>% select(n, JS_Mean, JS_SD, Salary_Mean, Salary_SD, TimeSearch_Mean, TimeSearch_SD)
-row2 <- summary_df %>% select(YrsExp_Mean, YrsExp_SD, AI_Rate, Remote_Rate) %>%
-  rename(
-    `YrsExp Mean` = YrsExp_Mean,
-    `YrsExp SD`   = YrsExp_SD,
-    `AI Adoption Rate` = AI_Rate,
-    `Remote Rate` = Remote_Rate
-  )
-
-table1 <- knitr::kable(
-  row1,
-  digits  = 2,
-  caption = "Descriptive summary (Part 1 of 2)",
-  booktabs = TRUE,
-  col.names = c("n", "JS Mean", "JS SD", "Salary Mean", "Salary SD",
-                "TimeSearch Mean", "TimeSearch SD")
-)
-if (has_kableextra) {
-  table1 <- table1 %>%
-    kableExtra::kable_styling(
-      latex_options = c("striped", "hold_position"),
-      full_width    = FALSE,
-      position      = "center"
-    ) %>%
-    kableExtra::add_header_above(c(
-      " "              = 1,
-      "Job Satisfaction" = 2,
-      "Salary (USD)"   = 2,
-      "Time Searching (min)" = 2
-    ))
-}
-table1
-
-table2 <- knitr::kable(
-  row2,
-  digits   = 2,
-  caption  = "Descriptive summary (Part 2 of 2)",
-  booktabs = TRUE
-)
-if (has_kableextra) {
-  table2 <- table2 %>%
-    kableExtra::kable_styling(
-      latex_options = c("striped", "hold_position"),
-      full_width    = FALSE,
-      position      = "center"
-    ) %>%
-    kableExtra::add_header_above(c(
-      "Years of Experience" = 2,
-      "Binary Variables"    = 2
-    ))
-}
-table2
-
-table3 <- knitr::kable(
-  head(df),
-  digits   = 2,
-  caption  = "Sample first 6 rows of data (imputed using CART)",
-  booktabs = TRUE
-)
-if (has_kableextra) {
-  table3 <- table3 %>%
-    kableExtra::kable_styling(
-      latex_options = c("striped", "scale_down", "hold_position"),
-      full_width    = FALSE,
-      position      = "center"
-    )
-}
-table3
+```{r cd-setup, ref.label='setup', echo=TRUE, eval=FALSE}
 ```
+
+#### Code for Descriptive Statistics
+
+```{r cd-descriptive, ref.label='descriptive-statistics', echo=TRUE, eval=FALSE}
+```
+
+#### Code for CART Tree (rpart.plot)
+
+```{r cd-cart-tree, ref.label='cart-tree-visual', echo=TRUE, eval=FALSE}
+```
+
+#### Base CART Tree (Appendix Reference)
 
 ```{r appendix-cart-tree, eval=FALSE}
 library(rpart)
@@ -680,7 +711,7 @@ plot(cart_model, uniform = TRUE, margin = 0.08, main = "CART Tree for Job Satisf
 text(cart_model, use.n = TRUE, cex = 0.75)
 ```
 
-```{r appendix-cart-tree-figure, echo=FALSE, message=FALSE, warning=FALSE}
+```{r appendix-cart-tree-figure, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.width=7.5, fig.height=4.8, out.width='0.95\\linewidth'}
 library(rpart)
 
 cart_df <- read_csv("outputs/data_imputed_primary.csv", show_col_types = FALSE)
@@ -696,132 +727,82 @@ plot(cart_model, uniform = TRUE, margin = 0.08, main = "CART Tree for Job Satisf
 text(cart_model, use.n = TRUE, cex = 0.75)
 ```
 
-```{r appendix-variable-importance, eval=FALSE}
-importance_rank <- c(
-  TimeSearching_Min = 2660.7569,
-  Years_Exp = 783.4335,
-  Salary = 214.9234
-)
+#### Code for Variable Importance Ranking
 
-importance_rank
+```{r cd-importance, ref.label='variable-importance-ranking', echo=TRUE, eval=FALSE}
 ```
 
-```{r appendix-cp-profile-table, eval=FALSE}
-cp_profile <- read_csv("outputs/cart_cp_profile.csv", show_col_types = FALSE)
+#### Code for CP Profile Table
 
-cp_profile
+```{r cd-cp-table, ref.label='cp-profile-table', echo=TRUE, eval=FALSE}
 ```
 
-```{r appendix-cp-profile-visual, eval=FALSE}
-plot(
-  cp_profile$CP,
-  cp_profile$xerror,
-  type = "b",
-  pch = 19,
-  col = "#2F5AA8",
-  xlim = rev(range(cp_profile$CP)),
-  xlab = "Complexity Parameter (CP)",
-  ylab = "Cross-Validated Error (xerror)",
-  main = "Cost-Complexity Pruning Profile"
-)
+#### Code for CP Profile Graph
 
-abline(v = 0.001, lty = 2, lwd = 2, col = "#C0392B")
-text(0.001, max(cp_profile$xerror), labels = "cp = 0.001", pos = 4, cex = 0.8, col = "#C0392B")
+```{r cd-cp-visual, ref.label='cp-profile-visual', echo=TRUE, eval=FALSE}
 ```
 
-```{r appendix-hyperparam-shuffling-table, eval=FALSE}
-shuffle <- read_csv("outputs/cart_hyperparam_shuffle.csv", show_col_types = FALSE)
+#### Code for Hyperparameter Shuffling Table
 
-best_shuffle <- shuffle %>%
-  filter(status == "ok") %>%
-  arrange(xerror, desc(nsplit)) %>%
-  slice(1)
-
-best_shuffle
+```{r cd-hyper-table, ref.label='hyperparam-shuffling-table', echo=TRUE, eval=FALSE}
 ```
 
-```{r appendix-hyperparam-shuffling-visual, eval=FALSE}
-valid_shuffle <- shuffle %>%
-  filter(status == "ok", !is.na(cp), !is.na(xerror), !is.na(nsplit))
+#### Code for Hyperparameter Shuffling Graph
 
-max_splits <- max(valid_shuffle$nsplit, na.rm = TRUE)
-point_cex <- ifelse(
-  valid_shuffle$nsplit == 0,
-  1.35,
-  0.75 + (valid_shuffle$nsplit / max_splits) * 1.7
-)
-point_col <- ifelse(valid_shuffle$nsplit == 0, "#C0392B", "#2F5AA8")
-
-plot(
-  valid_shuffle$cp,
-  valid_shuffle$xerror,
-  pch = 19,
-  cex = point_cex,
-  col = point_col,
-  xlab = "Pruning Strength (cp)",
-  ylab = "Cross-Validated Error (xerror)",
-  main = "Hyperparameter Shuffling: xerror by cp (size = nsplit)"
-)
-
-abline(v = 0.001, lty = 2, lwd = 2, col = "#16A085")
-text(0.001, max(valid_shuffle$xerror), labels = "cp = 0.001", pos = 4, cex = 0.8, col = "#16A085")
-
-legend(
-  "topright",
-  legend = c("nsplit > 0", "nsplit = 0 (over-pruned)", "larger point = more splits"),
-  pch = c(19, 19, 19),
-  pt.cex = c(1.2, 1.2, 2.0),
-  col = c("#2F5AA8", "#C0392B", "#2F5AA8"),
-  bty = "n",
-  cex = 0.8
-)
+```{r cd-hyper-visual, ref.label='hyperparam-shuffling-visual', echo=TRUE, eval=FALSE}
 ```
 
-```{r appendix-seed-sensitivity-table, eval=FALSE}
-seed_averages <- read_csv("outputs/cart_mice_seed_averages.csv", show_col_types = FALSE)
+#### Code for Seed Sensitivity Table
 
-seed_averages %>% arrange(xerror)
+```{r cd-seed-table, ref.label='seed-sensitivity-table', echo=TRUE, eval=FALSE}
 ```
 
-```{r appendix-seed-sensitivity-visual, eval=FALSE}
-imp_vars <- c("TimeSearching_Min", "Years_Exp", "Salary", "Uses_AI", "Is_Remote")
-seed_plot <- seed_averages %>%
-  select(seed, all_of(imp_vars)) %>%
-  arrange(seed)
+#### Code for Seed Sensitivity Graph
 
-imp_mat <- as.matrix(seed_plot[, imp_vars])
-imp_share <- imp_mat / rowSums(imp_mat)
-
-matplot(
-  seed_plot$seed,
-  imp_share,
-  type = "b",
-  pch = c(19, 17, 15, 1, 2),
-  lty = 1,
-  lwd = c(2.6, 2.0, 2.0, 1.8, 1.8),
-  col = c("#1E8449", "#2E86C1", "#7D3C98", "#C0392B", "#7F8C8D"),
-  xlab = "Imputation Seed",
-  ylab = "Relative Variable Importance (share)",
-  main = "Variable Importance Stability Across Seeds"
-)
-
-legend(
-  "topright",
-  legend = c("TimeSearching_Min", "Years_Exp", "Salary", "Uses_AI", "Is_Remote"),
-  col = c("#1E8449", "#2E86C1", "#7D3C98", "#C0392B", "#7F8C8D"),
-  pch = c(19, 17, 15, 1, 2),
-  lty = 1,
-  lwd = c(2.6, 2.0, 2.0, 1.8, 1.8),
-  bty = "n",
-  cex = 0.8
-)
+```{r cd-seed-visual, ref.label='seed-sensitivity-visual', echo=TRUE, eval=FALSE}
 ```
 
-### Appendix B: Data Source
-Stack Overflow. (2024). 2024 Developer Survey. Retrieved from https://survey.stackoverflow.co/2024/
+#### Code for Conceptual Framework Diagram
+
+```{r cd-framework, ref.label='conceptual-framework', echo=TRUE, eval=FALSE}
+```
+
+### Appendix B: Repository Information
+
+All code, data, and analysis outputs are publicly available at:
+
+**https://github.com/peaceyyy/genai-productivity-satisfaction-tradeoff-study-data-analytics**
+
+#### Folder Structure
+
+The repository contains the following key directories:
+
+- **`data/`** — Raw survey data and schema files
+  - `survey_results_public.csv` — Stack Overflow 2024 Developer Survey (full)
+  - `survey_results_schema.csv` — Column definitions and metadata
+
+- **`imputation_scripts/`** — MICE imputation pipelines
+  - `impute_data_cart.r` — CART imputation method
+  - `impute_data_pmm.r` — Predictive Mean Matching method
+  - `impute_data_rf.r` — Random Forest imputation method
+
+- **`outputs/`** — Analysis results and model outputs
+  - `data_imputed_primary.csv` — Final imputed dataset (seed=200)
+  - `cart_cp_profile.csv` — Complexity parameter profiling results
+  - `cart_hyperparam_shuffle.csv` — Hyperparameter tuning results
+  - `cart_mice_seed_averages.csv` — Seed sensitivity summary statistics
+  - `model_summaries/` — Model performance metrics by method
+
+- **`Culminating Activity.Rmd`** — Main analysis document (this file)
+
+All inline file references (e.g., `[outputs/cart_cp_profile.csv](...)`) point to files in this repository structure.
+
+
 
 ### Appendix C: Notes on Random Seeds
 
 Random seeds initialize pseudorandom number generators (PRNGs) so that stochastic processes (like MICE imputations or algorithmic subsampling) can be reproduced exactly. A seed is not a model parameter — it only fixes the RNG state for reproducibility. Because different seeds can produce slightly different imputations or model splits, reporting the seed and testing sensitivity across several seeds is good practice for transparency.
 
 Why use `42`? The number 42 is a cultural reference (Douglas Adams' The Hitchhiker's Guide to the Galaxy) and has become a de-facto, tongue-in-cheek default in many code examples. There is no statistical or computational reason to prefer 42 over any other integer — it is purely conventional.
+
+
